@@ -10,7 +10,7 @@ static void RenderSceneCB()
     static GLclampf c = 0.0f;
     glClearColor(c, c, c, c);
 
-    c += 1.0f / 256.0f;
+    //c += 1.0f / 256.0f;
 
     if (c >= 1.0f) {
         c = 0;
@@ -20,7 +20,7 @@ static void RenderSceneCB()
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glDrawArrays(GL_POINTS, 0, 1);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
     glDisableVertexAttribArray(0);
 
     //glutPostRedisplay();
@@ -28,8 +28,15 @@ static void RenderSceneCB()
 }
 
 static void CreateVertexBuffer() {
-    glm::vec3 Vertices[1];
-    Vertices[0] = glm::vec3(0.0f, 0.0f, 0.0f);
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CW); // GL_CCW by default
+
+    glm::vec3 Vertices[3];
+
+    Vertices[0] = glm::vec3(-1.0f, -1.0f, 0.0f);
+    Vertices[1] = glm::vec3(0.0f, 1.0f, 0.0f);
+    Vertices[2] = glm::vec3(1.0f, -1.0f, 0.0f);
+
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);

@@ -1,6 +1,9 @@
-#include <GL/freeglut.h>
 #include <stdio.h>
+#include <GL/glew.h>
+#include <GL/freeglut.h>
+#include <glm/glm.hpp>
 
+GLuint VBO;
 
 static void RenderSceneCB()
 {
@@ -14,8 +17,22 @@ static void RenderSceneCB()
     }
 
     glClear(GL_COLOR_BUFFER_BIT);
-    glutPostRedisplay();
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glDrawArrays(GL_POINTS, 0, 1);
+    glDisableVertexAttribArray(0);
+
+    //glutPostRedisplay();
     glutSwapBuffers();
+}
+
+static void CreateVertexBuffer() {
+    glm::vec3 Vertices[1];
+    Vertices[0] = glm::vec3(0.0f, 0.0f, 0.0f);
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
 }
 
 int main(int argc, char** argv)
@@ -31,10 +48,19 @@ int main(int argc, char** argv)
     int y = 100;
     glutInitWindowPosition(x, y);
     int win = glutCreateWindow("Test");
-    printf("window id: %d\n", win);
+    printf("window id: %d\n", win); 
 
-    GLclampf Red = 0.0f, Green = 0.0f, Blue = 0.0f, Alpha = 0.0f;
-    glClearColor(Red, Green, Blue, Alpha);
+    GLenum res = glewInit();
+
+    if (res != GLEW_OK) {
+        fprintf(stderr, "Error: '%s'\n", glewGetErrorString(res));
+        return 1;
+    }
+
+    //GLclampf Red = 0.0f, Green = 0.0f, Blue = 0.0f, Alpha = 0.0f;
+    //glClearColor(Red, Green, Blue, Alpha);
+
+    CreateVertexBuffer();
 
     glutDisplayFunc(RenderSceneCB);
 

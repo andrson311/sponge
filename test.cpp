@@ -8,32 +8,28 @@
 #include "utils/shader_utils.h"
 
 GLuint VBO;
-GLint gTranslationLocation;
+GLint gRotationLocation;
 
 static void RenderSceneCB()
 {
-    // static GLclampf c = 0.0f;
-    // glClearColor(c, c, c, c);
-
-    //c += 1.0f / 256.0f;
-
-    // if (c >= 1.0f) {
-    //     c = 0;
-    // }
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-    static float Scale = 0.0f;
-    static float Delta = 0.005f;
+    static float AngleInRadians = 0.0f;
+    static float Delta = 0.01f;
+    static float Limit = glm::pi<float>() / 2;
 
-    Scale += Delta;
-    if ((Scale >= 1.0f) || (Scale <= -1.0f)) {
+    AngleInRadians += Delta;
+    if ((AngleInRadians >= Limit) || (AngleInRadians <= -Limit)) {
         Delta *= -1.0f;
     }
 
-    glm::mat4 Translation = glm::translate(glm::mat4(1.0f), glm::vec3(Scale * 2, Scale, 0.0f));
+    glm::mat4 Rotation = glm::rotate(
+        glm::mat4(1.0f), 
+        AngleInRadians, 
+        glm::vec3(0.0f, 0.0f, 1.0f));
 
-    glUniformMatrix4fv(gTranslationLocation, 1, GL_FALSE, glm::value_ptr(Translation));
+    glUniformMatrix4fv(gRotationLocation, 1, GL_FALSE, glm::value_ptr(Rotation));
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glEnableVertexAttribArray(0);
@@ -98,9 +94,9 @@ static void CompileShaders() {
         exit(1);
     }
 
-    gTranslationLocation = glGetUniformLocation(ShaderProgram, "gTranslation");
-    if (gTranslationLocation == -1) {
-        printf("Error getting uniform location of 'gTranslation'\n");
+    gRotationLocation = glGetUniformLocation(ShaderProgram, "gRotation");
+    if (gRotationLocation == -1) {
+        printf("Error getting uniform location of 'gRotation'\n");
         exit(1);
     }
 

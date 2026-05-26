@@ -99,9 +99,9 @@ static void RenderSceneCB()
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-    //ScalingExample();
+    ScalingExample();
     //CombiningTransformationsExample1();
-    CombiningTransformationsExample2();
+    //CombiningTransformationsExample2();
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glEnableVertexAttribArray(0);
@@ -188,11 +188,11 @@ int main(int argc, char** argv)
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGBA|GLUT_DEPTH);
 
-    int width = 720;
+    int width = 1280;
     int height = 720;
     glutInitWindowSize(width, height);
 
-    int x = 200;
+    int x = 1920 + 200; // offset for 1920 pixels to display the window on the second screen
     int y = 100;
     glutInitWindowPosition(x, y);
     int win = glutCreateWindow("Test");

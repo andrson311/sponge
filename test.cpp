@@ -1,36 +1,11 @@
 #include <stdio.h>
-#include <string>
-#include <cstring>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <glm/glm.hpp>
-#include <fstream>
-
-bool ReadFile(const char* pFileName, std::string& outFile);
+#include "utils/general.h"
+#include "shader_utils.h"
 
 GLuint VBO;
-
-bool ReadFile(const char* pFileName, std::string& outFile) {
-    std::ifstream f(pFileName);
-
-    bool ret = false;
-
-    if (f.is_open()) {
-        std::string line;
-        while (getline(f, line)) {
-            outFile.append(line);
-            outFile.append("\n");
-        }
-
-        f.close();
-
-        ret = true;
-    } else {
-        printf("Error: '%s' is cooked\n", pFileName);
-    }
-
-    return ret;
-}
 
 static void RenderSceneCB()
 {
@@ -68,36 +43,6 @@ static void CreateVertexBuffer() {
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
-}
-
-static void AddShader(GLuint ShaderProgram, const char* pShaderText, GLenum ShaderType) {
-    GLuint ShaderObj = glCreateShader(ShaderType);
-
-    if (ShaderObj == 0) {
-        fprintf(stderr, "Error creating shader type %d\n", ShaderType);
-        exit(0);
-    }
-
-    const GLchar* p[1];
-    p[0] = pShaderText;
-
-    GLint Lengths[1];
-    Lengths[0] = (GLint)strlen(pShaderText);
-
-    glShaderSource(ShaderObj, 1, p, Lengths);
-    glCompileShader(ShaderObj);
-
-    GLint success;
-    glGetShaderiv(ShaderObj, GL_COMPILE_STATUS, &success);
-
-    if (!success) {
-        GLchar InfoLog[1024];
-        glGetShaderInfoLog(ShaderObj, 1024, NULL, InfoLog);
-        fprintf(stderr, "Error compiling shader type %d: '%s'\n", ShaderType, InfoLog);
-        exit(1);
-    }
-
-    glAttachShader(ShaderProgram, ShaderObj);
 }
 
 // names of the shader files

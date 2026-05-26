@@ -6,26 +6,38 @@
 #include "utils/shader_utils.h"
 
 GLuint VBO;
+GLint gScaleLocation;
 
 static void RenderSceneCB()
 {
-    static GLclampf c = 0.0f;
-    glClearColor(c, c, c, c);
+    // static GLclampf c = 0.0f;
+    // glClearColor(c, c, c, c);
 
     //c += 1.0f / 256.0f;
 
-    if (c >= 1.0f) {
-        c = 0;
-    }
+    // if (c >= 1.0f) {
+    //     c = 0;
+    // }
 
     glClear(GL_COLOR_BUFFER_BIT);
+
+    static float Scale = 0.0f;
+    static float Delta = 0.005f;
+
+    Scale += Delta;
+    if ((Scale >= 1.0f) || (Scale <= -1.0f)) {
+        Delta *= -1.0f;
+    }
+
+    glUniform1f(gScaleLocation, Scale);
+
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
     glDrawArrays(GL_TRIANGLES, 0, 3);
     glDisableVertexAttribArray(0);
 
-    //glutPostRedisplay();
+    glutPostRedisplay();
     glutSwapBuffers();
 }
 
@@ -83,6 +95,12 @@ static void CompileShaders() {
         exit(1);
     }
 
+    gScaleLocation = glGetUniformLocation(ShaderProgram, "gScale");
+    if (gScaleLocation == -1) {
+        printf("Error getting uniform location of 'gScale'\n");
+        exit(1);
+    }
+
     glValidateProgram(ShaderProgram);
     glGetProgramiv(ShaderProgram, GL_VALIDATE_STATUS, &Success);
     if (!Success) {
@@ -116,8 +134,8 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    //GLclampf Red = 0.0f, Green = 0.0f, Blue = 0.0f, Alpha = 0.0f;
-    //glClearColor(Red, Green, Blue, Alpha);
+    GLclampf Red = 0.0f, Green = 0.0f, Blue = 0.0f, Alpha = 0.0f;
+    glClearColor(Red, Green, Blue, Alpha);
 
     CreateVertexBuffer();
 

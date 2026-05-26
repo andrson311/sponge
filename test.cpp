@@ -3,7 +3,7 @@
 #include <GL/freeglut.h>
 #include <glm/glm.hpp>
 #include "utils/general.h"
-#include "shader_utils.h"
+#include "utils/shader_utils.h"
 
 GLuint VBO;
 

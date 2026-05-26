@@ -3,7 +3,7 @@
 #include <cstring>
 #include <string>
 
-static void AddShader(GLuint ShaderProgram, const char* pShaderText, GLenum ShaderType) {
+void AddShader(GLuint ShaderProgram, const char* pShaderText, GLenum ShaderType) {
     GLuint ShaderObj = glCreateShader(ShaderType);
 
     if (ShaderObj == 0) {

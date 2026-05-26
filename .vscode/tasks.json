@@ -14,6 +14,8 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "${file}",
+                "utils/general.cpp",
+                "utils/shader_utils.cpp",
                 "-o",
                 "${workspaceFolder}/build/${fileBasenameNoExtension}",
                 "-lGL",

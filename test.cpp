@@ -2,11 +2,13 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>  
 #include "utils/general.h"
 #include "utils/shader_utils.h"
 
 GLuint VBO;
-GLint gScaleLocation;
+GLint gTranslationLocation;
 
 static void RenderSceneCB()
 {
@@ -29,14 +31,15 @@ static void RenderSceneCB()
         Delta *= -1.0f;
     }
 
-    glUniform1f(gScaleLocation, Scale);
+    glm::mat4 Translation = glm::translate(glm::mat4(1.0f), glm::vec3(Scale * 2, Scale, 0.0f));
+
+    glUniformMatrix4fv(gTranslationLocation, 1, GL_FALSE, glm::value_ptr(Translation));
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
     glDrawArrays(GL_TRIANGLES, 0, 3);
     glDisableVertexAttribArray(0);
-
     glutPostRedisplay();
     glutSwapBuffers();
 }
@@ -95,9 +98,9 @@ static void CompileShaders() {
         exit(1);
     }
 
-    gScaleLocation = glGetUniformLocation(ShaderProgram, "gScale");
-    if (gScaleLocation == -1) {
-        printf("Error getting uniform location of 'gScale'\n");
+    gTranslationLocation = glGetUniformLocation(ShaderProgram, "gTranslation");
+    if (gTranslationLocation == -1) {
+        printf("Error getting uniform location of 'gTranslation'\n");
         exit(1);
     }
 

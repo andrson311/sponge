@@ -1,131 +1,164 @@
 #include <stdio.h>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
+#include <cstdint>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>  
 #include "utils/general.h"
 #include "utils/shader_utils.h"
 
+#define WINDOW_WIDTH 1280
+#define WINDOW_HEIGHT 720
+
 GLuint VBO;
-GLint gScalingLocation;
+GLuint IBO;
+GLint gWorldLocation;
 
-static void ScalingExample() {
-    static float Scale = 1.0f;
-    static float Delta = 0.01f;
-
-    Scale += Delta;
-    if ((Scale >= 1.5f) || (Scale <= 0.5)) {
-        Delta *= -1.0f;
-    }
-
-    glm::mat4 Scaling = glm::scale(
-        glm::mat4(1.0f),
-        glm::vec3(Scale)
-    );
-
-    glUniformMatrix4fv(gScalingLocation, 1, GL_FALSE, glm::value_ptr(Scaling));
-}
-
-static void CombiningTransformationsExample1() {
-    static float Scale = 1.5f;
-    glm::mat4 Scaling = glm::scale(
-        glm::mat4(1.0f),
-        glm::vec3(Scale)
-    );
-
-    static float Location = 0.0f;
-    static float Delta = 0.01f;
-
-    Location += Delta;
-    if ((Location >= 0.5f) || (Location <= -0.5f))
-    {
-        Delta *= -1.0f;
-    }
-
-    glm::mat4 Translation = glm::translate(
-        glm::mat4(1.0f),
-        glm::vec3(Location, 0.0f, 0.0f)
-    );
-
-    //glm::mat4 FinalTransform = Translation * Scaling;
-    glm::mat4 FinalTransform = Scaling * Translation;
-    
-    glUniformMatrix4fv(
-        gScalingLocation,
-        1,
-        GL_FALSE,
-        glm::value_ptr(FinalTransform)
-    );
-}
-
-static void CombiningTransformationsExample2() {
-    static float Scale = 0.25f;
-
-    glm::mat4 Scaling = glm::scale(
-        glm::mat4(1.0f),
-        glm::vec3(Scale)
-    );
-
-    static float AngleInRadians = 0.0f;
-    static float Delta = 0.01f;
-
-    AngleInRadians += Delta;
-    glm::mat4 Rotation = glm::rotate(
-        glm::mat4(1.0f),
-        AngleInRadians,
-        glm::vec3(0.0f, 0.0f, 1.0f)
-    );
-
-    static float Location = 0.5f;
-    glm::mat4 Translation = glm::translate(
-        glm::mat4(1.0f),
-        glm::vec3(Location, 0.0f, 0.0f)
-    );
-
-    //glm::mat4 FinalTransform = Translation * Rotation * Scaling;
-    glm::mat4 FinalTransform = Rotation * Translation * Scaling;
-
-    glUniformMatrix4fv(
-        gScalingLocation,
-        1,
-        GL_FALSE,
-        glm::value_ptr(FinalTransform)
-    );
-}
 
 static void RenderSceneCB()
 {
-
     glClear(GL_COLOR_BUFFER_BIT);
 
-    ScalingExample();
-    //CombiningTransformationsExample1();
-    //CombiningTransformationsExample2();
+    static float Scale = 0.0f;
+
+    glm::mat4 Rotation = glm::rotate(
+        glm::mat4(1.0f),
+        Scale,
+        glm::vec3(0.0f, 1.0f, 0.0f)
+    );
+
+    glm::mat4 Projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
+
+    glm::mat4 FinalMatrix = Projection * Rotation;
+
+    glUniformMatrix4fv(
+        gWorldLocation, 
+        1, 
+        GL_FALSE,
+        glm::value_ptr(FinalMatrix) 
+    );
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
+
+    // position
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glVertexAttribPointer(
+        0, 
+        3, 
+        GL_FLOAT, 
+        GL_FALSE, 
+        6 * sizeof(float), 
+        0
+    );
+
+    // color
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(
+        1, 
+        3, 
+        GL_FLOAT, 
+        GL_FALSE, 
+        6 * sizeof(float), 
+        (void*)(3 * sizeof(float))
+    );
+
+    glDrawElements(
+        GL_TRIANGLES,
+        54,
+        GL_UNSIGNED_INT,
+        0
+    );
+
     glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+
     glutPostRedisplay();
     glutSwapBuffers();
 }
 
+struct Vertex {
+    glm::vec3 pos;
+    glm::vec3 color;
+
+    Vertex() {}
+
+    Vertex(float x, float y) {
+        pos = glm::vec3(x, y, 0.0f);
+        color = glm::vec3(
+            (float)rand() / (float)(RAND_MAX),
+            (float)rand() / (float)(RAND_MAX),
+            (float)rand() / (float)(RAND_MAX)
+        );
+    }
+};
+
 static void CreateVertexBuffer() {
-    glEnable(GL_CULL_FACE);
-    glFrontFace(GL_CW); // GL_CCW by default
-    // glCullFace(GL_FRONT) // note: sets the cull face
+    Vertex Vertices[19];
 
-    glm::vec3 Vertices[3];
+    // Center
+    Vertices[0] = Vertex(0.0f, 0.0f);
 
-    Vertices[0] = glm::vec3(-1.0f, -1.0f, 0.0f);
-    Vertices[1] = glm::vec3(0.0f, 1.0f, 0.0f);
-    Vertices[2] = glm::vec3(1.0f, -1.0f, 0.0f);
+    // Top row
+    Vertices[1] = Vertex(-1.0f, 1.0f);
+    Vertices[2] = Vertex(-0.75f, 1.0f);
+    Vertices[3] = Vertex(-0.50f, 1.0f);
+    Vertices[4] = Vertex(-0.25f, 1.0f);
+    Vertices[5] = Vertex(0.0f, 1.0f);
+    Vertices[6] = Vertex(0.25f, 1.0f);
+    Vertices[7] = Vertex(0.50f, 1.0f);
+    Vertices[8] = Vertex(0.75f, 1.0f);
+    Vertices[9] = Vertex(1.0f, 1.0f);
+    
+    // Bottom row
+    Vertices[10] = Vertex(-1.0f, -1.0f);
+    Vertices[11] = Vertex(-0.75f, -1.0f);
+    Vertices[12] = Vertex(-0.50f, -1.0f);
+    Vertices[13] = Vertex(-0.25f, -1.0f);
+    Vertices[14] = Vertex(0.0f, -1.0f);
+    Vertices[15] = Vertex(0.25f, -1.0f);
+    Vertices[16] = Vertex(0.50f, -1.0f);
+    Vertices[17] = Vertex(0.75f, -1.0f);
+    Vertices[18] = Vertex(1.0f, -1.0f);
 
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
+}
+
+static void CreateIndexBuffer() {
+    uint32_t Indices[] = {
+        // Top triangles
+        0, 2, 1,
+        0, 3, 2,
+        0, 4, 3,
+        0, 5, 4,
+        0, 6, 5,
+        0, 7, 6,
+        0, 8, 7,
+        0, 9, 8,
+
+        // Bottom triangles
+        0, 10, 11,
+        0, 11, 12,
+        0, 12, 13,
+        0, 13, 14,
+        0, 14, 15,
+        0, 15, 16,
+        0, 16, 17,
+        0, 17, 18,
+
+        // Left triangle
+        0, 1, 10,
+
+        // Right triangle
+        0, 18, 9
+    };
+
+    glGenBuffers(1, &IBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices), Indices, GL_STATIC_DRAW);
 }
 
 // names of the shader files
@@ -166,9 +199,9 @@ static void CompileShaders() {
         exit(1);
     }
 
-    gScalingLocation = glGetUniformLocation(ShaderProgram, "gScaling");
-    if (gScalingLocation == -1) {
-        printf("Error getting uniform location of 'gScaling'\n");
+    gWorldLocation = glGetUniformLocation(ShaderProgram, "gWorld");
+    if (gWorldLocation == -1) {
+        printf("Error getting uniform location of 'gWorld'\n");
         exit(1);
     }
 
@@ -205,10 +238,11 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    GLclampf Red = 0.0f, Green = 0.0f, Blue = 0.0f, Alpha = 0.0f;
-    glClearColor(Red, Green, Blue, Alpha);
+    // GLclampf Red = 0.0f, Green = 0.0f, Blue = 0.0f, Alpha = 0.0f;
+    // glClearColor(Red, Green, Blue, Alpha);
 
     CreateVertexBuffer();
+    CreateIndexBuffer();
 
     CompileShaders();
 

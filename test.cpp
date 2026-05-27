@@ -2,9 +2,12 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <cstdint>
+#include <unistd.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>  
+#include <glm/gtc/type_ptr.hpp>
+
 #include "utils/general.h"
 #include "utils/shader_utils.h"
 
@@ -22,21 +25,17 @@ static void RenderSceneCB()
 
     static float Scale = 0.0f;
 
-    glm::mat4 Rotation = glm::rotate(
+    glm::mat4 World = glm::rotate(
         glm::mat4(1.0f),
         Scale,
-        glm::vec3(0.0f, 1.0f, 0.0f)
+        glm::vec3(0.0f, 0.0f, 1.0f)
     );
 
-    glm::mat4 Projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
-
-    glm::mat4 FinalMatrix = Projection * Rotation;
-
     glUniformMatrix4fv(
-        gWorldLocation, 
-        1, 
+        gWorldLocation,
+        1,
         GL_FALSE,
-        glm::value_ptr(FinalMatrix) 
+        glm::value_ptr(World)
     );
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -218,12 +217,11 @@ static void CompileShaders() {
 
 int main(int argc, char** argv)
 {
+    srandom(getpid());
+
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGBA|GLUT_DEPTH);
-
-    int width = 1280;
-    int height = 720;
-    glutInitWindowSize(width, height);
+    glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 
     int x = 1920 + 200; // offset for 1920 pixels to display the window on the second screen
     int y = 100;

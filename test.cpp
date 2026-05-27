@@ -18,24 +18,45 @@ GLuint VBO;
 GLuint IBO;
 GLint gWorldLocation;
 
-
 static void RenderSceneCB()
 {
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     static float Scale = 0.0f;
 
-    glm::mat4 World = glm::rotate(
-        glm::mat4(1.0f),
-        Scale,
-        glm::vec3(0.0f, 0.0f, 1.0f)
+    Scale += 0.02f;
+
+    if (Scale >= glm::two_pi<float>()) {
+        Scale = 0.0f;
+    }
+
+    glm::mat4 Rotation = glm::rotate(
+        glm::mat4(1.0f), 
+        Scale, 
+        glm::vec3(0.0f, 1.0f, 0.0f)
     );
 
+    glm::mat4 Translation = glm::translate(
+        glm::mat4(1.0f), 
+        glm::vec3(0.0f, 0.0f, -2.0f)
+    );
+
+    float aspectRatio = (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT;
+
+    glm::mat4 Projection = glm::perspective(
+        glm::radians(90.0f), 
+        aspectRatio, 
+        0.1f, 
+        10.0f
+    );
+
+    glm::mat4 FinalMatrix = Projection * Translation * Rotation;
+
     glUniformMatrix4fv(
-        gWorldLocation,
-        1,
-        GL_FALSE,
-        glm::value_ptr(World)
+        gWorldLocation, 
+        1, 
+        GL_FALSE, 
+        glm::value_ptr(FinalMatrix)
     );
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -65,7 +86,7 @@ static void RenderSceneCB()
 
     glDrawElements(
         GL_TRIANGLES,
-        54,
+        36,
         GL_UNSIGNED_INT,
         0
     );
@@ -83,8 +104,8 @@ struct Vertex {
 
     Vertex() {}
 
-    Vertex(float x, float y) {
-        pos = glm::vec3(x, y, 0.0f);
+    Vertex(float x, float y, float z) {
+        pos = glm::vec3(x, y, z);
         color = glm::vec3(
             (float)rand() / (float)(RAND_MAX),
             (float)rand() / (float)(RAND_MAX),
@@ -94,33 +115,17 @@ struct Vertex {
 };
 
 static void CreateVertexBuffer() {
-    Vertex Vertices[19];
+    Vertex Vertices[8];
 
-    // Center
-    Vertices[0] = Vertex(0.0f, 0.0f);
-
-    // Top row
-    Vertices[1] = Vertex(-1.0f, 1.0f);
-    Vertices[2] = Vertex(-0.75f, 1.0f);
-    Vertices[3] = Vertex(-0.50f, 1.0f);
-    Vertices[4] = Vertex(-0.25f, 1.0f);
-    Vertices[5] = Vertex(0.0f, 1.0f);
-    Vertices[6] = Vertex(0.25f, 1.0f);
-    Vertices[7] = Vertex(0.50f, 1.0f);
-    Vertices[8] = Vertex(0.75f, 1.0f);
-    Vertices[9] = Vertex(1.0f, 1.0f);
+    Vertices[0] = Vertex(0.5f, 0.5f, 0.5f);
+    Vertices[1] = Vertex(-0.5f, 0.5f, -0.5f);
+    Vertices[2] = Vertex(-0.5f, 0.5f, 0.5f);
+    Vertices[3] = Vertex(0.5f, -0.5f, -0.5f);
+    Vertices[4] = Vertex(-0.5f, -0.5f, -0.5f);
+    Vertices[5] = Vertex(0.5f, 0.5f, -0.5f);
+    Vertices[6] = Vertex(0.5f, -0.5f, 0.5f);
+    Vertices[7] = Vertex(-0.5f, -0.5f, 0.5f);
     
-    // Bottom row
-    Vertices[10] = Vertex(-1.0f, -1.0f);
-    Vertices[11] = Vertex(-0.75f, -1.0f);
-    Vertices[12] = Vertex(-0.50f, -1.0f);
-    Vertices[13] = Vertex(-0.25f, -1.0f);
-    Vertices[14] = Vertex(0.0f, -1.0f);
-    Vertices[15] = Vertex(0.25f, -1.0f);
-    Vertices[16] = Vertex(0.50f, -1.0f);
-    Vertices[17] = Vertex(0.75f, -1.0f);
-    Vertices[18] = Vertex(1.0f, -1.0f);
-
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
@@ -128,31 +133,18 @@ static void CreateVertexBuffer() {
 
 static void CreateIndexBuffer() {
     uint32_t Indices[] = {
-        // Top triangles
-        0, 2, 1,
-        0, 3, 2,
-        0, 4, 3,
-        0, 5, 4,
-        0, 6, 5,
+        0, 1, 2,
+        1, 3, 4,
+        5, 6, 3,
+        7, 3, 6,
+        2, 4, 7,
         0, 7, 6,
-        0, 8, 7,
-        0, 9, 8,
-
-        // Bottom triangles
-        0, 10, 11,
-        0, 11, 12,
-        0, 12, 13,
-        0, 13, 14,
-        0, 14, 15,
-        0, 15, 16,
-        0, 16, 17,
-        0, 17, 18,
-
-        // Left triangle
-        0, 1, 10,
-
-        // Right triangle
-        0, 18, 9
+        0, 5, 1,
+        1, 5, 3,
+        5, 0, 6,
+        7, 4, 3, 
+        2, 1, 4,
+        0, 2, 7
     };
 
     glGenBuffers(1, &IBO);
@@ -236,8 +228,13 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    // GLclampf Red = 0.0f, Green = 0.0f, Blue = 0.0f, Alpha = 0.0f;
-    // glClearColor(Red, Green, Blue, Alpha);
+    GLclampf Red = 0.0f, Green = 0.0f, Blue = 0.0f, Alpha = 0.0f;
+    glClearColor(Red, Green, Blue, Alpha);
+
+    //glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    //glFrontFace(GL_CW); // Blender default positioning
+    glCullFace(GL_BACK);
 
     CreateVertexBuffer();
     CreateIndexBuffer();

@@ -16,7 +16,7 @@
 
 GLuint VBO;
 GLuint IBO;
-GLint gWorldLocation;
+GLint gWVPLocation;
 
 static void RenderSceneCB()
 {
@@ -41,6 +41,17 @@ static void RenderSceneCB()
         glm::vec3(0.0f, 0.0f, -2.0f)
     );
 
+    glm::mat4 World = Translation * Rotation;
+
+    glm::vec3 CameraPos(-1.0f, 1.0f, 1.0f);
+    glm::vec3 CameraTarget(0.0f, 0.0f, -1.0f);  // N vector (forward)
+    glm::vec3 CameraUp(0.0f, 1.0f, 0.0f);       // V vector (up)
+    glm::mat4 Camera = glm::lookAt(
+        CameraPos, 
+        CameraPos + CameraTarget, 
+        CameraUp
+    );
+
     float aspectRatio = (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT;
 
     glm::mat4 Projection = glm::perspective(
@@ -50,13 +61,13 @@ static void RenderSceneCB()
         10.0f
     );
 
-    glm::mat4 FinalMatrix = Projection * Translation * Rotation;
+    glm::mat4 WVP = Projection * Camera * World;
 
     glUniformMatrix4fv(
-        gWorldLocation, 
+        gWVPLocation, 
         1, 
         GL_FALSE, 
-        glm::value_ptr(FinalMatrix)
+        glm::value_ptr(WVP)
     );
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -190,9 +201,9 @@ static void CompileShaders() {
         exit(1);
     }
 
-    gWorldLocation = glGetUniformLocation(ShaderProgram, "gWorld");
-    if (gWorldLocation == -1) {
-        printf("Error getting uniform location of 'gWorld'\n");
+    gWVPLocation = glGetUniformLocation(ShaderProgram, "gWVP");
+    if (gWVPLocation == -1) {
+        printf("Error getting uniform location of 'gWVP'\n");
         exit(1);
     }
 
@@ -231,9 +242,7 @@ int main(int argc, char** argv)
     GLclampf Red = 0.0f, Green = 0.0f, Blue = 0.0f, Alpha = 0.0f;
     glClearColor(Red, Green, Blue, Alpha);
 
-    //glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
-    //glFrontFace(GL_CW); // Blender default positioning
     glCullFace(GL_BACK);
 
     CreateVertexBuffer();

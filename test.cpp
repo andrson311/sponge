@@ -21,27 +21,22 @@ GLuint IBO;
 GLint gWVPLocation;
 
 WorldTrans CubeWorldTransform;
-Camera GameCamera;
+glm::vec3 CameraPos(0.0f, 0.0f, -1.0f);
+glm::vec3 CameraTarget(0.0f, 0.0f, 1.0f);
+glm::vec3 CameraUp(0.0f, 1.0f, 0.0f);
+Camera GameCamera(WINDOW_WIDTH, WINDOW_HEIGHT, CameraPos, CameraTarget, CameraUp);
 
 static void RenderSceneCB()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    GameCamera.OnRender();
+
     static float RotationAngle = 0.02f;
 
-    CubeWorldTransform.SetPosition(0.0f, 0.0f, -2.0f);
+    CubeWorldTransform.SetPosition(0.0f, 0.0f, 2.0f);
     CubeWorldTransform.Rotate(RotationAngle, RotationAngle, 0.0f);
     glm::mat4 World = CubeWorldTransform.GetMatrix();
-
-    // glm::vec3 CameraPos(-1.0f, 1.0f, 1.0f);
-    // glm::vec3 CameraTarget(0.0f, 0.0f, -1.0f);  // N vector (forward)
-    // glm::vec3 CameraUp(0.0f, 1.0f, 0.0f);       // V vector (up)
-    // glm::mat4 Camera = glm::lookAt(
-    //     CameraPos, 
-    //     CameraPos + CameraTarget, 
-    //     CameraUp
-    // );
-
     glm::mat4 Camera = GameCamera.GetMatrix();
 
     float aspectRatio = (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT;
@@ -218,6 +213,17 @@ static void SpecialKeyboardCB(int key, int mouse_x, int mouse_y) {
     GameCamera.OnKeyboard(key);
 }
 
+static void PassiveMouseCB(int x, int y) {
+    GameCamera.OnMouse(x, y);
+}
+
+static void InitializeGlutCallbacks() {
+    glutDisplayFunc(RenderSceneCB);
+    glutKeyboardFunc(KeyboardCB);
+    glutSpecialFunc(SpecialKeyboardCB);
+    glutPassiveMotionFunc(PassiveMouseCB);
+}
+
 int main(int argc, char** argv)
 {
     srandom(getpid());
@@ -226,11 +232,23 @@ int main(int argc, char** argv)
     glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGBA|GLUT_DEPTH);
     glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    int x = 1920 + 200; // offset for 1920 pixels to display the window on the second screen
-    int y = 100;
-    glutInitWindowPosition(x, y);
-    int win = glutCreateWindow("Test");
-    printf("window id: %d\n", win); 
+    // int x = 1920 + 200; // offset for 1920 pixels to display the window on the second screen
+    // int y = 100;
+    // glutInitWindowPosition(x, y);
+    // int win = glutCreateWindow("Test");
+    // printf("window id: %d\n", win); 
+
+    char game_mode_string[64];
+    snprintf(
+        game_mode_string, 
+        sizeof(game_mode_string), 
+        "%dx%d@32", 
+        WINDOW_WIDTH, 
+        WINDOW_HEIGHT
+    );
+
+    glutGameModeString(game_mode_string);
+    glutEnterGameMode();
 
     GLenum res = glewInit();
 
@@ -250,11 +268,7 @@ int main(int argc, char** argv)
 
     CompileShaders();
 
-    //GameCamera.SetPosition(-1.0f, 1.0f, 1.0f);
-
-    glutDisplayFunc(RenderSceneCB);
-    glutKeyboardFunc(KeyboardCB);
-    glutSpecialFunc(SpecialKeyboardCB);
+    InitializeGlutCallbacks();
 
     glutMainLoop();
 

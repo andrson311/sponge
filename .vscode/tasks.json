@@ -7,15 +7,14 @@
             "problemMatcher": []
         },
         {
-            "type": "cppbuild",
+            "type": "shell",
             "label": "C/C++: gcc build active file",
             "command": "/usr/bin/g++",
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
                 "${file}",
-                "utils/general.cpp",
-                "utils/shader_utils.cpp",
+                "utils/*.cpp",
                 "-o",
                 "${workspaceFolder}/build/${fileBasenameNoExtension}",
                 "-lGL",
@@ -24,7 +23,7 @@
                 "-lGLEW"
             ],
             "options": {
-                "cwd": "${fileDirname}"
+                "cwd": "${workspaceFolder}"
             },
             "dependsOn": "Create build directory",
             "problemMatcher": [

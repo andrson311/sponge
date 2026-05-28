@@ -10,6 +10,8 @@
 
 #include "utils/general.h"
 #include "utils/shader_utils.h"
+#include "utils/world_transform.h"
+#include "utils/camera.h"
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
@@ -18,39 +20,29 @@ GLuint VBO;
 GLuint IBO;
 GLint gWVPLocation;
 
+WorldTrans CubeWorldTransform;
+Camera GameCamera;
+
 static void RenderSceneCB()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    static float Scale = 0.0f;
+    static float RotationAngle = 0.02f;
 
-    Scale += 0.02f;
+    CubeWorldTransform.SetPosition(0.0f, 0.0f, -2.0f);
+    CubeWorldTransform.Rotate(RotationAngle, RotationAngle, 0.0f);
+    glm::mat4 World = CubeWorldTransform.GetMatrix();
 
-    if (Scale >= glm::two_pi<float>()) {
-        Scale = 0.0f;
-    }
+    // glm::vec3 CameraPos(-1.0f, 1.0f, 1.0f);
+    // glm::vec3 CameraTarget(0.0f, 0.0f, -1.0f);  // N vector (forward)
+    // glm::vec3 CameraUp(0.0f, 1.0f, 0.0f);       // V vector (up)
+    // glm::mat4 Camera = glm::lookAt(
+    //     CameraPos, 
+    //     CameraPos + CameraTarget, 
+    //     CameraUp
+    // );
 
-    glm::mat4 Rotation = glm::rotate(
-        glm::mat4(1.0f), 
-        Scale, 
-        glm::vec3(0.0f, 1.0f, 0.0f)
-    );
-
-    glm::mat4 Translation = glm::translate(
-        glm::mat4(1.0f), 
-        glm::vec3(0.0f, 0.0f, -2.0f)
-    );
-
-    glm::mat4 World = Translation * Rotation;
-
-    glm::vec3 CameraPos(-1.0f, 1.0f, 1.0f);
-    glm::vec3 CameraTarget(0.0f, 0.0f, -1.0f);  // N vector (forward)
-    glm::vec3 CameraUp(0.0f, 1.0f, 0.0f);       // V vector (up)
-    glm::mat4 Camera = glm::lookAt(
-        CameraPos, 
-        CameraPos + CameraTarget, 
-        CameraUp
-    );
+    glm::mat4 Camera = GameCamera.GetMatrix();
 
     float aspectRatio = (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT;
 
@@ -218,6 +210,14 @@ static void CompileShaders() {
     glUseProgram(ShaderProgram);
 }
 
+static void KeyboardCB(u_char key, int mouse_x, int mouse_y) {
+    GameCamera.OnKeyboard(key);
+}
+
+static void SpecialKeyboardCB(int key, int mouse_x, int mouse_y) {
+    GameCamera.OnKeyboard(key);
+}
+
 int main(int argc, char** argv)
 {
     srandom(getpid());
@@ -250,7 +250,11 @@ int main(int argc, char** argv)
 
     CompileShaders();
 
+    //GameCamera.SetPosition(-1.0f, 1.0f, 1.0f);
+
     glutDisplayFunc(RenderSceneCB);
+    glutKeyboardFunc(KeyboardCB);
+    glutSpecialFunc(SpecialKeyboardCB);
 
     glutMainLoop();
 

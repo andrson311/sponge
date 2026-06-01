@@ -164,7 +164,7 @@ void Mesh::InitSingleMesh(u_int MeshIndex, const aiMesh *paiMesh)
         m_Vertices.push_back(v);
     }
 
-    for (u_int i = 0; paiMesh->mNumFaces; i++)
+    for (u_int i = 0; i < paiMesh->mNumFaces; i++)
     {
         const aiFace &Face = paiMesh->mFaces[i];
         m_Indices.push_back(Face.mIndices[0]);
@@ -214,6 +214,12 @@ bool Mesh::InitMaterials(const aiScene *pScene, const std::string &Filename)
     }
 
     return true;
+}
+
+void Mesh::LoadTextures(const std::string& Dir, const aiMaterial* pMaterial, int Index)
+{
+    LoadDiffuseTexture(Dir, pMaterial, Index);
+    LoadSpecularTexture(Dir, pMaterial, Index);
 }
 
 void Mesh::LoadDiffuseTexture(const std::string &Dir, const aiMaterial *pMaterial, int MaterialIndex)

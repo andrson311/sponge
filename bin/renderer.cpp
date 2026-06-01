@@ -17,51 +17,17 @@ Renderer::Renderer()
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glEnable(GL_DEPTH_TEST);
-
-    persProjInfo = {
-        45.0f,
-        (float)WINDOW_WIDTH,
-        (float)WINDOW_HEIGHT,
-        1.0f,
-        100.0f};
 }
 
 Renderer::~Renderer()
 {
-    delete pTexture;
     delete pGameCamera;
-
-    if (CubeVAO != -1)
-        glDeleteVertexArrays(1, &CubeVAO);
-    if (CubeVBO != -1)
-        glDeleteVertexArrays(1, &CubeVBO);
-    if (CubeIBO != -1)
-        glDeleteVertexArrays(1, &CubeIBO);
-    if (PyramidVAO != -1)
-        glDeleteVertexArrays(1, &PyramidVAO);
-    if (PyramidVBO != -1)
-        glDeleteVertexArrays(1, &PyramidVBO);
-    if (PyramidIBO != -1)
-        glDeleteVertexArrays(1, &PyramidIBO);
+    delete pMesh;
 }
 
 bool Renderer::Init()
 {
-    CreateCubeVAO();
-    CreatePyramidVAO();
-
-    glBindVertexArray(CubeVAO);
-
     CompileShaders();
-
-    pTexture = new Texture(GL_TEXTURE_2D, "assets/bricks.jpg");
-    if (!pTexture->Load())
-    {
-        return false;
-    }
-
-    pTexture->Bind(GL_TEXTURE0);
-    glUniform1i(SamplerLocation, 0);
 
     glm::vec3 CameraPos(0.0f, 0.0f, -1.0f);
     glm::vec3 CameraTarget(0.0f, 0.0f, 1.0f);
@@ -72,6 +38,12 @@ bool Renderer::Init()
         CameraPos,
         CameraTarget,
         CameraUp);
+    
+    pMesh = new Mesh();
+    if (!pMesh->LoadMesh("assets/spider.obj"))
+    {
+        return false;
+    }
 
     return true;
 }
@@ -84,31 +56,22 @@ void Renderer::RenderSceneCB()
 
     float RotationAngle = 0.01f;
 
-    CubeWorldTransform.SetPosition(0.0f, 0.0f, 2.0f);
-    CubeWorldTransform.Rotate(RotationAngle, RotationAngle, 0.0f);
+    MeshWorldTransform.SetScale(0.01f);
+    MeshWorldTransform.SetPosition(0.0f, 0.0f, 2.0f);
+    MeshWorldTransform.Rotate(0.0f, RotationAngle, 0.0f);
 
-    glm::mat4 World = CubeWorldTransform.GetMatrix();
+    glm::mat4 World = MeshWorldTransform.GetMatrix();
     glm::mat4 View = pGameCamera->GetMatrix();
 
     float aspectRatio = (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT;
 
     glm::mat4 Projection = glm::perspective(
-        glm::radians(persProjInfo.FOV), aspectRatio, persProjInfo.zNear, persProjInfo.zFar);
+        glm::radians(FOV), aspectRatio, zNear, zFar);
 
     glm::mat4 WVP = Projection * View * World;
     glUniformMatrix4fv(WVPLocation, 1, GL_FALSE, glm::value_ptr(WVP));
 
-    GLint CurrentVAO;
-    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &CurrentVAO);
-
-    if (CurrentVAO == (GLint)CubeVAO)
-    {
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-    }
-    else
-    {
-        glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
-    }
+    pMesh->Render();
 
     glutPostRedisplay();
     glutSwapBuffers();
@@ -121,14 +84,6 @@ void Renderer::KeyboardCB(u_char key, int mouse_x, int mouse_y)
     case 'q':
     case 27: // escape key code
         exit(0);
-
-    case '1':
-        glBindVertexArray(CubeVAO);
-        break;
-
-    case '2':
-        glBindVertexArray(PyramidVAO);
-        break;
     }
 
     pGameCamera->OnKeyboard(key);
@@ -141,101 +96,6 @@ void Renderer::SpecialKeyboardCB(int key, int mouse_x, int mouse_y)
 
 void Renderer::PassiveMouseCB(int x, int y) {
     pGameCamera->OnMouse(x, y);
-}
-
-void Renderer::CreateCubeVAO()
-{
-    glGenVertexArrays(1, &CubeVAO);
-    glBindVertexArray(CubeVAO);
-
-    glm::vec2 t00(0.0f, 0.0f);
-    glm::vec2 t01(0.0f, 1.0f);
-    glm::vec2 t10(1.0f, 0.0f);
-    glm::vec2 t11(1.0f, 1.0f);
-
-    Vertex Vertices[8];
-    Vertices[0] = Vertex(glm::vec3( 0.5f,  0.5f,  0.5f), t00);
-    Vertices[1] = Vertex(glm::vec3(-0.5f,  0.5f, -0.5f), t01);
-    Vertices[2] = Vertex(glm::vec3(-0.5f,  0.5f,  0.5f), t10);
-    Vertices[3] = Vertex(glm::vec3( 0.5f, -0.5f, -0.5f), t11);
-    Vertices[4] = Vertex(glm::vec3(-0.5f, -0.5f, -0.5f), t00);
-    Vertices[5] = Vertex(glm::vec3( 0.5f,  0.5f, -0.5f), t10);
-    Vertices[6] = Vertex(glm::vec3( 0.5f, -0.5f,  0.5f), t01);
-    Vertices[7] = Vertex(glm::vec3(-0.5f, -0.5f,  0.5f), t11);
-
-    glGenBuffers(1, &CubeVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, CubeVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
-
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(3 * sizeof(float)));
-
-    uint32_t Indices[] = {
-        0, 1, 2,   1, 3, 4,
-        5, 6, 3,   7, 3, 6,
-        2, 4, 7,   0, 7, 6,
-        0, 5, 1,   1, 5, 3,
-        5, 0, 6,   7, 4, 3,
-        2, 1, 4,   0, 2, 7
-    };
-
-    glGenBuffers(1, &CubeIBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, CubeIBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices), Indices, GL_STATIC_DRAW);
-
-    glBindVertexArray(0);
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-}
-
-void Renderer::CreatePyramidVAO()
-{
-    glGenVertexArrays(1, &PyramidVAO);
-    glBindVertexArray(PyramidVAO);
-
-    glm::vec2 t00 (0.0f, 0.0f);
-    glm::vec2 t050(0.5f, 0.0f);
-    glm::vec2 t10 (1.0f, 0.0f);
-    glm::vec2 t051(0.5f, 1.0f);
-
-    Vertex Vertices[4] = {
-        Vertex(glm::vec3(-1.0f, -1.0f,  0.5773f), t00),
-        Vertex(glm::vec3( 0.0f, -1.0f, -1.15475f), t050),
-        Vertex(glm::vec3( 1.0f, -1.0f,  0.5773f), t10),
-        Vertex(glm::vec3( 0.0f,  1.0f,  0.0f),    t051)
-    };
-
-    glGenBuffers(1, &PyramidVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, PyramidVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
-
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(3 * sizeof(float)));
-
-    uint32_t Indices[] = {
-        0, 3, 1,
-        1, 3, 2,
-        2, 3, 0,
-        0, 1, 2
-    };
-
-    glGenBuffers(1, &PyramidIBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, PyramidIBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices), Indices, GL_STATIC_DRAW);
-
-    glBindVertexArray(0);
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void Renderer::AddShader(GLuint ShaderProgram, const char* pShaderText, GLenum ShaderType)

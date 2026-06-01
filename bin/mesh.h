@@ -17,7 +17,7 @@
 #include "world_transform.h"
 
 #define INVALID_MATERIAL 0xFFFFFFFF
-#define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs)
+#define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices)
 
 struct Material
 {
@@ -32,7 +32,7 @@ struct Material
 class Mesh
 {
 public:
-    Mesh();
+    Mesh() {};
     ~Mesh();
 
     bool LoadMesh(const std::string &Filename, int AssimpFlags = ASSIMP_LOAD_FLAGS);

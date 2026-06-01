@@ -6,6 +6,7 @@
 #include "texture.h"
 #include "camera.h"
 #include "world_transform.h"
+#include "mesh.h"
 
 struct Vertex
 {
@@ -44,23 +45,16 @@ public:
     void PassiveMouseCB(int x, int y);
 
 private:
-    void CreateCubeVAO();
-    void CreatePyramidVAO();
     void CompileShaders();
     void AddShader(GLuint ShaderProgram, const char *pShaderText, GLenum ShaderType);
 
-    GLuint CubeVAO = -1;
-    GLuint CubeVBO = -1;
-    GLuint CubeIBO = -1;
-
-    GLuint PyramidVAO = -1;
-    GLuint PyramidVBO = -1;
-    GLuint PyramidIBO = -1;
-
     GLuint WVPLocation;
     GLuint SamplerLocation;
-    Texture *pTexture = NULL;
     Camera *pGameCamera = NULL;
-    WorldTrans CubeWorldTransform;
-    PersProjInfo persProjInfo;
+    Mesh* pMesh = NULL;
+    WorldTrans MeshWorldTransform;
+    
+    float FOV   = 45.0f;
+    float zNear = 1.0f;
+    float zFar  = 100.0f;
 };

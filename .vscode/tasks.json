@@ -14,7 +14,7 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "${file}",
-                "utils/*.cpp",
+                "bin/*.cpp",
                 "includes/stb_image.cpp",
                 "-I${workspaceFolder}/includes",
                 "-o",
@@ -22,7 +22,8 @@
                 "-lGL",
                 "-lGLU",
                 "-lglut",
-                "-lGLEW"
+                "-lGLEW",
+                "-lassimp"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

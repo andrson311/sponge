@@ -10,6 +10,7 @@ public:
 
     bool Load(bool IsSRGB = false);
     void Load(const std::string &Filename, bool IsSRGB = false);
+    void Load(u_int BufferSize, const void *pData, bool isSRGB = false);
     void LoadRaw(int Width, int Height, int BPP, const u_char *pImageData, bool IsSRGB = false);
 
     void Bind(GLenum TextureUnit);
@@ -23,7 +24,7 @@ public:
     GLuint GetTexture() const { return m_textureObj; }
 
 private:
-    void LoadInternal(const void* pImageData, bool IsSRGB);
+    void LoadInternal(const void *pImageData, bool IsSRGB);
 
     GLenum m_textureTarget = 0;
     GLuint m_textureObj = 0;

@@ -6,9 +6,6 @@
 #define TEX_COORD_LOCATION 1
 #define NORMAL_LOCATION 2
 
-#define COLOR_TEXTURE_UNIT GL_TEXTURE0
-#define SPECULAR_TEXTURE_UNIT GL_TEXTURE1
-
 static std::string GetDirFromFilename(const std::string &Filename)
 {
     size_t pos = Filename.find_last_of("/\\");

@@ -7,6 +7,7 @@
 #include "camera.h"
 #include "world_transform.h"
 #include "mesh.h"
+#include "lighting_technique.h"
 
 struct Vertex
 {
@@ -45,14 +46,12 @@ public:
     void PassiveMouseCB(int x, int y);
 
 private:
-    void CompileShaders();
-    void AddShader(GLuint ShaderProgram, const char *pShaderText, GLenum ShaderType);
-
     GLuint WVPLocation;
     GLuint SamplerLocation;
     Camera *pGameCamera = NULL;
     Mesh* pMesh = NULL;
-    WorldTrans MeshWorldTransform;
+    LightingTechnique* pLightingTech = NULL;
+    BaseLight baseLight;
     
     float FOV   = 45.0f;
     float zNear = 1.0f;

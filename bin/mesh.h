@@ -15,21 +15,18 @@
 
 #include "texture.h"
 #include "world_transform.h"
+#include "mesh_common.h"
+#include "material.h"
 
 #define INVALID_MATERIAL 0xFFFFFFFF
-#define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices)
+//#define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices)
+#define COLOR_TEXTURE_UNIT GL_TEXTURE0
+#define SPECULAR_TEXTURE_UNIT GL_TEXTURE1
 
-struct Material
-{
-    glm::vec3 AmbientColor = glm::vec3(0.0f);
-    glm::vec3 DiffuseColor = glm::vec3(0.0f);
-    glm::vec3 SpecularColor = glm::vec3(0.0f);
+// to display the barrel
+#define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices)
 
-    Texture *pDiffuse = NULL;
-    Texture *pSpecular = NULL;
-};
-
-class Mesh
+class Mesh : public MeshCommon
 {
 public:
     Mesh() {};

@@ -1,4 +1,4 @@
-#include "camera.h"
+#include "../inc/camera.h"
 #include <GL/freeglut.h>
 #include <stdio.h>
 #include <glm/gtc/quaternion.hpp>

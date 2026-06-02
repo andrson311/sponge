@@ -2,8 +2,8 @@
 #include <string.h>
 #include <GL/glew.h>
 
-#include "technique.h"
-#include "util.h"
+#include "../inc/technique.h"
+#include "../inc/util.h"
 
 Technique::Technique()
 {

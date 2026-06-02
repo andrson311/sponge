@@ -3,10 +3,7 @@
 #include <GL/freeglut.h>
 #include <cstdint>
 #include <unistd.h>
-#include "bin/renderer.h"
-
-#define WINDOW_WIDTH 1280
-#define WINDOW_HEIGHT 720
+#include "bin/inc/renderer.h"
 
 Renderer* pRenderer = NULL;
 

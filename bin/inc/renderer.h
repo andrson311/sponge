@@ -1,13 +1,15 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 
-#include "../includes/stb_image.h"
-
+#include "stb_image.h"
 #include "texture.h"
 #include "camera.h"
 #include "world_transform.h"
 #include "mesh.h"
 #include "lighting_technique.h"
+
+#define WINDOW_WIDTH 1280
+#define WINDOW_HEIGHT 720
 
 struct Vertex
 {
@@ -51,7 +53,7 @@ private:
     Camera *pGameCamera = NULL;
     Mesh* pMesh = NULL;
     LightingTechnique* pLightingTech = NULL;
-    BaseLight baseLight;
+    DirectionalLight dirLight;
     
     float FOV   = 45.0f;
     float zNear = 1.0f;

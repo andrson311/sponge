@@ -1,7 +1,7 @@
-#include "texture.h"
+#include "../inc/texture.h"
 #include <stdio.h>
 
-#include "../includes/stb_image.h"
+#include "../inc/stb_image.h"
 
 Texture::Texture(GLenum TextureTarget, const std::string &FileName)
 {

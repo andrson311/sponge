@@ -1,4 +1,4 @@
-#include "world_transform.h"
+#include "../inc/world_transform.h"
 
 void WorldTrans::SetScale(float scale) {
     m_scale = scale;

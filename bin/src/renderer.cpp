@@ -1,5 +1,5 @@
-#include "renderer.h"
-#include "util.h"
+#include "../inc/renderer.h"
+#include "../inc/util.h"
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
@@ -8,15 +8,16 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#define WINDOW_WIDTH 1280
-#define WINDOW_HEIGHT 720
-
 Renderer::Renderer()
 {
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glEnable(GL_DEPTH_TEST);
+
+    dirLight.AmbientIntensity = 0.5;
+    dirLight.DiffuseIntensity = 2.0f;
+    dirLight.WorldDirection = glm::vec3(-1.0f, 0.0f, 0.0f);
 }
 
 Renderer::~Renderer()
@@ -51,8 +52,6 @@ bool Renderer::Init()
     
     pLightingTech->Enable();
     pLightingTech->SetTextureUnit(COLOR_TEXTURE_UNIT);
-    
-    baseLight.AmbientIntensity = 0.5f;
 
     return true;
 }
@@ -72,6 +71,9 @@ void Renderer::RenderSceneCB()
     worldTransform.Rotate(0.0f, RotationAngle, 0.0f);
 
     glm::mat4 World = worldTransform.GetMatrix();
+
+    dirLight.CalcLocalDirection(World);
+
     glm::mat4 View = pGameCamera->GetMatrix();
 
     float aspectRatio = (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT;
@@ -81,7 +83,7 @@ void Renderer::RenderSceneCB()
 
     glm::mat4 WVP = Projection * View * World;
     pLightingTech->SetWVP(WVP);
-    pLightingTech->SetLight(baseLight);
+    pLightingTech->SetDirectionalLight(dirLight);
     pLightingTech->SetMaterial(pMesh->GetMaterial());
 
     pMesh->Render();

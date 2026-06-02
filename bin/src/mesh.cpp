@@ -1,4 +1,4 @@
-#include "mesh.h"
+#include "../inc/mesh.h"
 #include <stdio.h>
 #include <cassert>
 

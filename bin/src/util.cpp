@@ -1,4 +1,4 @@
-#include "util.h"
+#include "../inc/util.h"
 #include <stdio.h>
 #include <string>
 #include <fstream>

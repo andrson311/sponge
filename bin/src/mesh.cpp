@@ -6,23 +6,21 @@
 #define TEX_COORD_LOCATION 1
 #define NORMAL_LOCATION 2
 
-static std::string GetDirFromFilename(const std::string &Filename)
-{
-    size_t pos = Filename.find_last_of("/\\");
-    return (pos == std::string::npos) ? "." : Filename.substr(0, pos);
-}
-
-static std::string GetFullPath(const std::string &Dir, const aiString &Path)
+std::string GetFullPath(const std::string& Dir, const aiString& Path)
 {
     std::string p(Path.data);
+    std::replace(p.begin(), p.end(), '\\', '/');
 
-    if (p == "C:\\\\")
-    {
-        p = "";
+    if (p.size() >= 2 && std::isalpha((unsigned char)p[0]) && p[1] == ':') {
+        p = p.substr(2);
     }
-    else if (p.substr(0, 2) == ".\\")
-    {
-        p = p.substr(2, p.size() - 2);
+
+    if (p.size() >= 2 && p.substr(0, 2) == "./") {
+        p = p.substr(2);
+    }
+
+    if (!p.empty() && p[0] == '/') {
+        p = p.substr(1);
     }
 
     return Dir + "/" + p;
@@ -271,7 +269,7 @@ void Mesh::LoadSpecularTexture(const std::string &Dir, const aiMaterial *pMateri
     if (pMaterial->GetTextureCount(aiTextureType_SHININESS) > 0)
     {
         aiString Path;
-        if (pMaterial->GetTexture(aiTextureType_SHININESS, 0, &Path) == AI_SUCCESS)
+        if (pMaterial->GetTexture(aiTextureType_SHININESS, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
         {
             const aiTexture *paiTexture = m_pScene->GetEmbeddedTexture(Path.C_Str());
             if (paiTexture)

@@ -47,17 +47,16 @@ void Texture::Load(const std::string &Filename, bool IsSRGB)
 void Texture::Load(u_int BufferSize, const void *pData, bool IsRGB)
 {
     int width, height, channels;
-    u_char* pImageData = stbi_load_from_memory(
-        (const stbi_uc*)pData, BufferSize,
-        &width, &height, &channels, 0
-    );
+    u_char *pImageData = stbi_load_from_memory(
+        (const stbi_uc *)pData, BufferSize,
+        &width, &height, &channels, 0);
 
     if (!pImageData)
     {
         fprintf(stderr, "Failed to load embedded texture: %s\n", stbi_failure_reason());
         return;
     }
-    
+
     m_imageWidth = width;
     m_imageHeight = height;
     m_imageBPP = channels;
@@ -84,12 +83,12 @@ void Texture::LoadInternal(const void *pImageData, bool IsSRGB)
         switch (m_imageBPP)
         {
         case 1:
+        {
             glTexImage2D(m_textureTarget, 0, GL_RED, m_imageWidth, m_imageHeight, 0, GL_RED, GL_UNSIGNED_BYTE, pImageData);
-            {
-                GLint SwizzleMask[] = {GL_RED, GL_RED, GL_RED, GL_RED};
-                glTexParameteriv(m_textureTarget, GL_TEXTURE_SWIZZLE_RGBA, SwizzleMask);
-            }
+            GLint SwizzleMask[] = {GL_RED, GL_RED, GL_RED, GL_RED};
+            glTexParameteriv(m_textureTarget, GL_TEXTURE_SWIZZLE_RGBA, SwizzleMask);
             break;
+        }
         case 2:
             glTexImage2D(m_textureTarget, 0, GL_RG, m_imageWidth, m_imageHeight, 0, GL_RG, GL_UNSIGNED_BYTE, pImageData);
             break;

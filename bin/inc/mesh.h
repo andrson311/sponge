@@ -17,11 +17,14 @@
 #include "world_transform.h"
 #include "mesh_common.h"
 #include "material.h"
+#include "util.h"
 
 #define INVALID_MATERIAL 0xFFFFFFFF
 //#define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices)
 #define COLOR_TEXTURE_UNIT GL_TEXTURE0
-#define SPECULAR_TEXTURE_UNIT GL_TEXTURE1
+#define COLOR_TEXTURE_UNIT_INDEX 0
+#define SPECULAR_TEXTURE_UNIT GL_TEXTURE8
+#define SPECULAR_TEXTURE_UNIT_INDEX 8
 
 // to display the barrel
 #define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices)

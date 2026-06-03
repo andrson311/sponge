@@ -13,8 +13,8 @@ public:
     void Rotate(float x, float y, float z);
     
     glm::mat4 GetMatrix();
-    // glm::mat4 GetReversedTranslationMatrix() const;
-    // glm::mat4 GetReversedRotationMatrix() const;
+    glm::mat4 GetReversedTranslationMatrix();
+    glm::mat4 GetReversedRotationMatrix();
 
     // glm::vec3 WorldPosToLocalPos(const glm::vec3& WorldPos) const;
     // glm::vec3 WorldDirToLocalDir(const glm::vec3& WorldDir) const;

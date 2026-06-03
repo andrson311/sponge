@@ -38,20 +38,25 @@ public:
 
     void SetWVP(const glm::mat4 &WVP);
     void SetTextureUnit(u_int TextureUnit);
+    void SetSpecularExponentTextureUnit(u_int TextureUnit);
     void SetDirectionalLight(const DirectionalLight &Light);
+    void SetCameraLocalPos(const glm::vec3 &CameraLocalPos);
     void SetMaterial(const Material &material);
 
 private:
     GLint WVPLoc;
     GLint sampleLoc;
+    GLuint samplerSpecularExponentLoc;
+    GLuint CameraLocalPosLoc;
 
     struct
     {
         GLuint AmbientColor;
         GLuint DiffuseColor;
+        GLuint SpecularColor;
     } materialLoc;
 
-    struct 
+    struct
     {
         GLuint Color;
         GLuint AmbientIntensity;

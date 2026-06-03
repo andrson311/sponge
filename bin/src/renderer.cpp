@@ -39,7 +39,7 @@ bool Renderer::Init()
         CameraUp);
     
     pMesh = new Mesh();
-    if (!pMesh->LoadMesh("assets/wine_barrel/wine_barrel_01_4k.obj"))
+    if (!pMesh->LoadMesh("assets/antique_ceramic_vase/antique_ceramic_vase_01_4k.obj"))
     {
         return false;
     }
@@ -51,7 +51,8 @@ bool Renderer::Init()
     }
     
     pLightingTech->Enable();
-    pLightingTech->SetTextureUnit(COLOR_TEXTURE_UNIT);
+    pLightingTech->SetTextureUnit(COLOR_TEXTURE_UNIT_INDEX);
+    pLightingTech->SetSpecularExponentTextureUnit(SPECULAR_TEXTURE_UNIT_INDEX);
 
     return true;
 }
@@ -66,7 +67,7 @@ void Renderer::RenderSceneCB()
 
     WorldTrans& worldTransform = pMesh->GetWorldTransform();
 
-    worldTransform.SetScale(1.0f);
+    worldTransform.SetScale(2.0f);
     worldTransform.SetPosition(0.0f, 0.0f, 2.0f);
     worldTransform.Rotate(0.0f, RotationAngle, 0.0f);
 
@@ -85,6 +86,15 @@ void Renderer::RenderSceneCB()
     pLightingTech->SetWVP(WVP);
     pLightingTech->SetDirectionalLight(dirLight);
     pLightingTech->SetMaterial(pMesh->GetMaterial());
+
+    glm::mat4 CameraToLocalTranslation = worldTransform.GetReversedTranslationMatrix();
+    glm::mat4 CameraToLocalRotation = worldTransform.GetReversedRotationMatrix();
+    glm::mat4 CameraToLocalTransformation = CameraToLocalRotation * CameraToLocalTranslation;
+    glm::vec4 CameraWorldPos = glm::vec4(pGameCamera->GetPos(), 1.0f);
+    glm::vec4 CameraLocalPos = CameraToLocalTransformation * CameraWorldPos;
+    glm::vec3 CameraLocalPos3f(CameraLocalPos);
+
+    pLightingTech->SetCameraLocalPos(CameraLocalPos3f);
 
     pMesh->Render();
 

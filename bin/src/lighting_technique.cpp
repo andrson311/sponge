@@ -1,7 +1,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "../inc/lighting_technique.h"
 
-void DirectionalLight::CalcLocalDirection(const glm::mat4& World) {
+void DirectionalLight::CalcLocalDirection(const glm::mat4 &World)
+{
     glm::mat3 World3f(World);
 
     glm::mat3 WorldToLocal = glm::transpose(World3f);
@@ -33,20 +34,26 @@ bool LightingTechnique::Init()
 
     WVPLoc = GetUniformLocation("gWVP");
     sampleLoc = GetUniformLocation("gSampler");
+    samplerSpecularExponentLoc = GetUniformLocation("gSamplerSpecularExponent");
     materialLoc.AmbientColor = GetUniformLocation("gMaterial.AmbientColor");
     materialLoc.DiffuseColor = GetUniformLocation("gMaterial.DiffuseColor");
+    materialLoc.SpecularColor = GetUniformLocation("gMaterial.SpecularColor");
     dirLightLoc.Color = GetUniformLocation("gDirectionalLight.Color");
     dirLightLoc.AmbientIntensity = GetUniformLocation("gDirectionalLight.AmbientIntensity");
     dirLightLoc.Direction = GetUniformLocation("gDirectionalLight.Direction");
     dirLightLoc.DiffuseIntensity = GetUniformLocation("gDirectionalLight.DiffuseIntensity");
+    CameraLocalPosLoc = GetUniformLocation("gCameraLocalPos");
 
     if (WVPLoc == 0xFFFFFFFF ||
         sampleLoc == 0xFFFFFFFF ||
-        materialLoc.AmbientColor == 0xFFFFFFFF || 
-        materialLoc.DiffuseColor == 0xFFFFFFFF || 
-        dirLightLoc.Color == 0xFFFFFFFF || 
-        dirLightLoc.AmbientIntensity == 0xFFFFFFFF || 
-        dirLightLoc.Direction == 0xFFFFFFFF || 
+        samplerSpecularExponentLoc == 0xFFFFFFFF ||
+        materialLoc.AmbientColor == 0xFFFFFFFF ||
+        materialLoc.DiffuseColor == 0xFFFFFFFF ||
+        materialLoc.SpecularColor == 0xFFFFFFFF ||
+        CameraLocalPosLoc == 0xFFFFFFFF ||
+        dirLightLoc.Color == 0xFFFFFFFF ||
+        dirLightLoc.AmbientIntensity == 0xFFFFFFFF ||
+        dirLightLoc.Direction == 0xFFFFFFFF ||
         dirLightLoc.DiffuseIntensity == 0xFFFFFFFF)
     {
         return false;
@@ -65,9 +72,14 @@ void LightingTechnique::SetTextureUnit(u_int TextureUnit)
     glUniform1i(sampleLoc, TextureUnit);
 }
 
+void LightingTechnique::SetSpecularExponentTextureUnit(u_int TextureUnit)
+{
+    glUniform1i(samplerSpecularExponentLoc, TextureUnit);
+}
+
 void LightingTechnique::SetDirectionalLight(const DirectionalLight &Light)
 {
-    glUniform3f(dirLightLoc.Color,            Light.Color.x, Light.Color.y, Light.Color.z);
+    glUniform3f(dirLightLoc.Color, Light.Color.x, Light.Color.y, Light.Color.z);
     glUniform1f(dirLightLoc.AmbientIntensity, Light.AmbientIntensity);
     glUniform1f(dirLightLoc.DiffuseIntensity, Light.DiffuseIntensity);
 
@@ -75,10 +87,17 @@ void LightingTechnique::SetDirectionalLight(const DirectionalLight &Light)
     glUniform3f(dirLightLoc.Direction, LocalDir.x, LocalDir.y, LocalDir.z);
 }
 
+void LightingTechnique::SetCameraLocalPos(const glm::vec3 &CameraLocalPos)
+{
+    glUniform3f(CameraLocalPosLoc, CameraLocalPos.x, CameraLocalPos.y, CameraLocalPos.z);
+}
+
 void LightingTechnique::SetMaterial(const Material &material)
 {
     glUniform3f(materialLoc.AmbientColor,
-        material.AmbientColor.r, material.AmbientColor.g, material.AmbientColor.b);
+                material.AmbientColor.r, material.AmbientColor.g, material.AmbientColor.b);
     glUniform3f(materialLoc.DiffuseColor,
-        material.DiffuseColor.r, material.DiffuseColor.g, material.DiffuseColor.b);
+                material.DiffuseColor.r, material.DiffuseColor.g, material.DiffuseColor.b);
+    glUniform3f(materialLoc.SpecularColor,
+                material.SpecularColor.r, material.SpecularColor.g, material.SpecularColor.b);
 }

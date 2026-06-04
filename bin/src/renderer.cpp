@@ -18,18 +18,40 @@ Renderer::Renderer()
     dirLight.AmbientIntensity = 0.5;
     dirLight.DiffuseIntensity = 2.0f;
     dirLight.WorldDirection = glm::vec3(-1.0f, 0.0f, 0.0f);
+
+    pointLights[0].DiffuseIntensity = 1.0f;
+    pointLights[0].Color = glm::vec3(1.0f);
+    pointLights[0].Attenuation.Linear = 0.2f;
+    pointLights[0].Attenuation.Exp = 0.0f;
+
+    pointLights[1].DiffuseIntensity = 1.0f;
+    pointLights[1].Color = glm::vec3(1.0f);
+    pointLights[1].Attenuation.Linear = 0.0f;
+    pointLights[1].Attenuation.Exp = 0.2f;
 }
 
 Renderer::~Renderer()
 {
-    delete pGameCamera;
-    delete pMesh;
+    if (pGameCamera)
+    {
+        delete pGameCamera;
+    }
+
+    if (pMesh)
+    {
+        delete pMesh;
+    }
+
+    if (pLightingTech)
+    {
+        delete pLightingTech;
+    }
 }
 
 bool Renderer::Init()
 {
-    glm::vec3 CameraPos(0.0f, 0.0f, -1.0f);
-    glm::vec3 CameraTarget(0.0f, 0.0f, 1.0f);
+    glm::vec3 CameraPos(0.0f, 5.0f, -8.0f);
+    glm::vec3 CameraTarget(0.0f, -0.5f, 1.0f);
     glm::vec3 CameraUp(0.0f, 1.0f, 0.0f);
     pGameCamera = new Camera(
         WINDOW_WIDTH,
@@ -37,9 +59,9 @@ bool Renderer::Init()
         CameraPos,
         CameraTarget,
         CameraUp);
-    
+
     pMesh = new Mesh();
-    if (!pMesh->LoadMesh("assets/antique_ceramic_vase/antique_ceramic_vase_01_4k.obj"))
+    if (!pMesh->LoadMesh("assets/box_terrain/box_terrain.obj"))
     {
         return false;
     }
@@ -49,7 +71,7 @@ bool Renderer::Init()
     {
         return false;
     }
-    
+
     pLightingTech->Enable();
     pLightingTech->SetTextureUnit(COLOR_TEXTURE_UNIT_INDEX);
     pLightingTech->SetSpecularExponentTextureUnit(SPECULAR_TEXTURE_UNIT_INDEX);
@@ -63,13 +85,10 @@ void Renderer::RenderSceneCB()
 
     pGameCamera->OnRender();
 
-    float RotationAngle = 0.01f;
+    WorldTrans &worldTransform = pMesh->GetWorldTransform();
 
-    WorldTrans& worldTransform = pMesh->GetWorldTransform();
-
-    worldTransform.SetScale(2.0f);
-    worldTransform.SetPosition(0.0f, 0.0f, 2.0f);
-    worldTransform.Rotate(0.0f, RotationAngle, 0.0f);
+    worldTransform.SetRotation(0.0f, 0.0f, 0.0f);
+    worldTransform.SetPosition(0.0f, 0.0f, 10.0f);
 
     glm::mat4 World = worldTransform.GetMatrix();
 
@@ -85,6 +104,20 @@ void Renderer::RenderSceneCB()
     glm::mat4 WVP = Projection * View * World;
     pLightingTech->SetWVP(WVP);
     pLightingTech->SetDirectionalLight(dirLight);
+
+    counter += 0.01f;
+    pointLights[0].WorldPosition.x = -8.0f;
+    pointLights[0].WorldPosition.y = sinf(counter) * 4 + 4;
+    pointLights[0].WorldPosition.z = 0.0f;
+    pointLights[0].CalcLocalPosition(worldTransform);
+
+    pointLights[1].WorldPosition.x = 8.0f;
+    pointLights[1].WorldPosition.y = sinf(counter) * 4 + 4;
+    pointLights[1].WorldPosition.z = 0.0f;
+    pointLights[1].CalcLocalPosition(worldTransform);
+
+    pLightingTech->SetPointLights(2, pointLights);
+
     pLightingTech->SetMaterial(pMesh->GetMaterial());
 
     glm::mat4 CameraToLocalTranslation = worldTransform.GetReversedTranslationMatrix();
@@ -102,6 +135,8 @@ void Renderer::RenderSceneCB()
     glutSwapBuffers();
 }
 
+#define ATTEN_STEP 0.01f
+
 void Renderer::KeyboardCB(u_char key, int mouse_x, int mouse_y)
 {
     switch (key)
@@ -109,8 +144,29 @@ void Renderer::KeyboardCB(u_char key, int mouse_x, int mouse_y)
     case 'q':
     case 27: // escape key code
         exit(0);
+
+    case 'a':
+        pointLights[0].Attenuation.Linear += ATTEN_STEP;
+        pointLights[1].Attenuation.Linear += ATTEN_STEP;
+        break;
+
+    case 'z':
+        pointLights[0].Attenuation.Linear -= ATTEN_STEP;
+        pointLights[1].Attenuation.Linear -= ATTEN_STEP;
+        break;
+
+    case 's':
+        pointLights[0].Attenuation.Exp += ATTEN_STEP;
+        pointLights[1].Attenuation.Exp += ATTEN_STEP;
+        break;
+
+    case 'x':
+        pointLights[0].Attenuation.Exp -= ATTEN_STEP;
+        pointLights[1].Attenuation.Exp -= ATTEN_STEP;
+        break;
     }
 
+    printf("Linear %f Exp %f\n", pointLights[0].Attenuation.Linear, pointLights[0].Attenuation.Exp);
     pGameCamera->OnKeyboard(key);
 }
 
@@ -119,6 +175,7 @@ void Renderer::SpecialKeyboardCB(int key, int mouse_x, int mouse_y)
     pGameCamera->OnKeyboard(key);
 }
 
-void Renderer::PassiveMouseCB(int x, int y) {
+void Renderer::PassiveMouseCB(int x, int y)
+{
     pGameCamera->OnMouse(x, y);
 }

@@ -49,16 +49,27 @@ glm::mat4 WorldTrans::GetMatrix()
     return Translation * Rotation * Scale;
 }
 
-glm::mat4 WorldTrans::GetReversedTranslationMatrix()
+glm::mat4 WorldTrans::GetReversedTranslationMatrix() const
 {
     glm::mat4 ReversedTranslation = glm::translate(glm::mat4(1.0f), -m_pos);
     return ReversedTranslation;
 }
 
-glm::mat4 WorldTrans::GetReversedRotationMatrix()
+glm::mat4 WorldTrans::GetReversedRotationMatrix() const
 {
     glm::mat4 ReversedRotation = glm::rotate(glm::mat4(1.0f), -m_rotation.x, glm::vec3(1.0f, 0.0f, 0.0f));
     ReversedRotation = glm::rotate(ReversedRotation, -m_rotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
     ReversedRotation = glm::rotate(ReversedRotation, -m_rotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
     return ReversedRotation;
+}
+
+glm::vec3 WorldTrans::WorldPosToLocalPos(const glm::vec3 &WorldPos) const
+{
+    glm::mat4 WorldToLocalTranslation = GetReversedTranslationMatrix();
+    glm::mat4 WorldToLocalRotation = GetReversedRotationMatrix();
+    glm::mat4 WorldToLocalTransformation = WorldToLocalRotation * WorldToLocalTranslation;
+    glm::vec4 WorldPos4f = glm::vec4(WorldPos, 1.0f);
+    glm::vec4 LocalPos4f = WorldToLocalTransformation * WorldPos4f;
+    glm::vec3 LocalPos3f = glm::vec3(LocalPos4f);
+    return LocalPos3f;
 }

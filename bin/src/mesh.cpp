@@ -269,7 +269,7 @@ void Mesh::LoadSpecularTexture(const std::string &Dir, const aiMaterial *pMateri
     if (pMaterial->GetTextureCount(aiTextureType_SHININESS) > 0)
     {
         aiString Path;
-        if (pMaterial->GetTexture(aiTextureType_SHININESS, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS)
+        if (pMaterial->GetTexture(aiTextureType_SHININESS, 0, &Path) == AI_SUCCESS)
         {
             const aiTexture *paiTexture = m_pScene->GetEmbeddedTexture(Path.C_Str());
             if (paiTexture)

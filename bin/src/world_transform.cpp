@@ -21,7 +21,7 @@ void WorldTrans::Rotate(float x, float y, float z)
     m_rotation = glm::mod(m_rotation, glm::two_pi<float>());
 }
 
-glm::mat4 WorldTrans::GetMatrix()
+glm::mat4 WorldTrans::GetMatrix() const
 {
     glm::mat4 Scale = glm::scale(
         glm::mat4(1.0f),
@@ -72,4 +72,13 @@ glm::vec3 WorldTrans::WorldPosToLocalPos(const glm::vec3 &WorldPos) const
     glm::vec4 LocalPos4f = WorldToLocalTransformation * WorldPos4f;
     glm::vec3 LocalPos3f = glm::vec3(LocalPos4f);
     return LocalPos3f;
+}
+
+glm::vec3 WorldTrans::WorldDirToLocalDir(const glm::vec3 &WorldDirection) const
+{
+    glm::mat3 World3f(GetMatrix());
+    glm::mat3 WorldToLocal = glm::transpose(World3f);
+    glm::vec3 LocalDirection = WorldToLocal * WorldDirection;
+    LocalDirection = glm::normalize(LocalDirection);
+    return LocalDirection;
 }

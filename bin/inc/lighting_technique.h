@@ -43,10 +43,24 @@ private:
     glm::vec3 LocalPosition = glm::vec3(0.0f);
 };
 
+class SpotLight : public PointLight
+{
+public:
+    glm::vec3 WorldDirection = glm::vec3(0.0f);
+    float Cutoff = 0.0f;
+
+    void CalcLocalDirectionAndPosition(const WorldTrans &worldTransform);
+    const glm::vec3 &GetLocalDirection() const { return LocalDirection; }
+
+private:
+    glm::vec3 LocalDirection = glm::vec3(0.0f);
+};
+
 class LightingTechnique : public Technique
 {
 public:
     static const u_int MAX_POINT_LIGHTS = 2;
+    static const u_int MAX_SPOT_LIGHTS = 2;
 
     LightingTechnique() {};
 
@@ -57,6 +71,7 @@ public:
     void SetSpecularExponentTextureUnit(u_int TextureUnit);
     void SetDirectionalLight(const DirectionalLight &Light);
     void SetPointLights(u_int NumLights, const PointLight *pLights);
+    void SetSpotLights(u_int NumLights, const SpotLight* pLights);
     void SetCameraLocalPos(const glm::vec3 &CameraLocalPos);
     void SetMaterial(const Material &material);
 
@@ -66,6 +81,7 @@ private:
     GLuint samplerSpecularExponentLoc;
     GLuint CameraLocalPosLoc;
     GLuint NumPointLightsLocation;
+    GLuint NumSpotLightsLocation;
 
     struct
     {
@@ -96,4 +112,21 @@ private:
             GLuint Exp;
         } Atten;
     } PointLightsLocation[MAX_POINT_LIGHTS];
+
+    struct
+    {
+        GLuint Color;
+        GLuint AmbientIntensity;
+        GLuint DiffuseIntensity;
+        GLuint Position;
+        GLuint Direction;
+        GLuint Cutoff;
+
+        struct
+        {
+            GLuint Constant;
+            GLuint Linear;
+            GLuint Exp;
+        } Atten;
+    } SpotLightsLocation[MAX_SPOT_LIGHTS];
 };

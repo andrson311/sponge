@@ -19,6 +19,7 @@ public:
     void OnRender();
     glm::mat4 GetMatrix();
     const glm::vec3 &GetPos() { return m_pos; }
+    const glm::vec3 &GetTarget() { return m_target; }
 
 private:
     void Init();

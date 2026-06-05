@@ -55,10 +55,11 @@ private:
     LightingTechnique* pLightingTech = NULL;
     DirectionalLight dirLight;
     PointLight pointLights[LightingTechnique::MAX_POINT_LIGHTS];
+    SpotLight spotLights[LightingTechnique::MAX_SPOT_LIGHTS];
     
     float FOV   = 45.0f;
     float zNear = 1.0f;
     float zFar  = 100.0f;
 
-    float counter = 0;
+    float counter = 0.0f;
 };

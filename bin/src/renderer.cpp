@@ -28,6 +28,16 @@ Renderer::Renderer()
     pointLights[1].Color = glm::vec3(1.0f);
     pointLights[1].Attenuation.Linear = 0.0f;
     pointLights[1].Attenuation.Exp = 0.2f;
+        
+    spotLights[0].DiffuseIntensity = 1.0f;
+    spotLights[0].Color = glm::vec3(1.0f, 0.0f, 0.0f);
+    spotLights[0].Attenuation.Linear = 0.01f;
+    spotLights[0].Cutoff = 20.0f;
+
+    spotLights[1].DiffuseIntensity = 1.0f;
+    spotLights[1].Color = glm::vec3(1.0f, 1.0f, 1.0f);
+    spotLights[1].Attenuation.Linear = 0.01f;
+    spotLights[1].Cutoff = 30.0f;
 }
 
 Renderer::~Renderer()
@@ -61,7 +71,7 @@ bool Renderer::Init()
         CameraUp);
 
     pMesh = new Mesh();
-    if (!pMesh->LoadMesh("assets/box_terrain/box_terrain.obj"))
+    if (!pMesh->LoadMesh("assets/zombie/Zombie.obj"))
     {
         return false;
     }
@@ -118,6 +128,16 @@ void Renderer::RenderSceneCB()
 
     pLightingTech->SetPointLights(2, pointLights);
 
+    spotLights[0].WorldPosition = pGameCamera->GetPos();
+    spotLights[0].WorldDirection = pGameCamera->GetTarget();
+    spotLights[0].CalcLocalDirectionAndPosition(worldTransform);
+
+    spotLights[1].WorldPosition = glm::vec3(0.0f, 1.0f, 0.0f);
+    spotLights[1].WorldDirection = glm::vec3(0.0f, -1.0f, 0.0f);
+    spotLights[1].CalcLocalDirectionAndPosition(worldTransform);
+
+    pLightingTech->SetSpotLights(2, spotLights);
+    
     pLightingTech->SetMaterial(pMesh->GetMaterial());
 
     glm::mat4 CameraToLocalTranslation = worldTransform.GetReversedTranslationMatrix();
@@ -136,6 +156,7 @@ void Renderer::RenderSceneCB()
 }
 
 #define ATTEN_STEP 0.01f
+#define ANGLE_STEP 1.0f
 
 void Renderer::KeyboardCB(u_char key, int mouse_x, int mouse_y)
 {
@@ -163,6 +184,22 @@ void Renderer::KeyboardCB(u_char key, int mouse_x, int mouse_y)
     case 'x':
         pointLights[0].Attenuation.Exp -= ATTEN_STEP;
         pointLights[1].Attenuation.Exp -= ATTEN_STEP;
+        break;
+    
+    case 'd':
+        spotLights[0].Cutoff += ANGLE_STEP;
+        break;
+
+    case 'c':
+        spotLights[0].Cutoff -= ANGLE_STEP;
+        break;
+
+    case 'g':
+        spotLights[1].Cutoff += ANGLE_STEP;
+        break;
+
+    case 'b':
+        spotLights[1].Cutoff -= ANGLE_STEP;
         break;
     }
 

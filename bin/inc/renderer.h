@@ -51,7 +51,9 @@ private:
     GLuint WVPLocation;
     GLuint SamplerLocation;
     Camera *pGameCamera = NULL;
-    Mesh* pMesh = NULL;
+    Mesh* pTerrain = NULL;
+    Mesh* pMesh1 = NULL;
+    Mesh* pMesh2 = NULL;
     LightingTechnique* pLightingTech = NULL;
     DirectionalLight dirLight;
     PointLight pointLights[LightingTechnique::MAX_POINT_LIGHTS];

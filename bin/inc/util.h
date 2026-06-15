@@ -9,7 +9,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#define ASSIMP_LOAD_FLAGS (aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices)
+#define ASSIMP_LOAD_FLAGS ( \
+    aiProcess_Triangulate | \
+    aiProcess_GenSmoothNormals | \
+    aiProcess_JoinIdenticalVertices | \
+    aiProcess_PopulateArmatureData | \
+    aiProcess_LimitBoneWeights | \
+    aiProcess_CalcTangentSpace | \
+    aiProcess_GlobalScale)
 
 #define INVALID_UNIFORM_LOCATION 0xFFFFFFFF
 

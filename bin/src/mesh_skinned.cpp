@@ -412,7 +412,7 @@ u_int MeshSkinned::FindPosition(float AnimationTimeTicks, const aiNodeAnim *pNod
         }
     }
 
-    return 0;
+    return pNodeAnim->mNumPositionKeys - 2;
 }
 
 void MeshSkinned::CalcInterpolatedPosition(aiVector3D &Out, float AnimationTimeTicks, const aiNodeAnim *pNodeAnim)
@@ -432,6 +432,7 @@ void MeshSkinned::CalcInterpolatedPosition(aiVector3D &Out, float AnimationTimeT
     float t2 = (float)pNodeAnim->mPositionKeys[NextPositionIndex].mTime;
     float DeltaTime = t2 - t1;
     float Factor = (AnimationTimeTicks - t1) / DeltaTime;
+    Factor = glm::clamp(Factor, 0.0f, 1.0f);
 
     assert(Factor >= 0.0f && Factor <= 1.0f);
 
@@ -454,7 +455,7 @@ u_int MeshSkinned::FindRotation(float AnimationTimeTicks, const aiNodeAnim *pNod
         }
     }
 
-    return 0;
+    return pNodeAnim->mNumRotationKeys - 2;
 }
 
 void MeshSkinned::CalcInterpolatedRotation(aiQuaternion &Out, float AnimationTimeTicks, const aiNodeAnim *pNodeAnim)
@@ -474,6 +475,7 @@ void MeshSkinned::CalcInterpolatedRotation(aiQuaternion &Out, float AnimationTim
     float t2 = (float)pNodeAnim->mRotationKeys[NextRotationIndex].mTime;
     float DeltaTime = t2 - t1;
     float Factor = (AnimationTimeTicks - t1) / DeltaTime;
+    Factor = glm::clamp(Factor, 0.0f, 1.0f);
 
     assert(Factor >= 0.0f && Factor <= 1.0f);
 
@@ -496,7 +498,7 @@ u_int MeshSkinned::FindScaling(float AnimationTimeTicks, const aiNodeAnim *pNode
         }
     }
 
-    return 0;
+    return pNodeAnim->mNumScalingKeys - 2;
 }
 
 void MeshSkinned::CalcInterpolatedScaling(aiVector3D &Out, float AnimationTimeTicks, const aiNodeAnim *pNodeAnim)
@@ -516,6 +518,7 @@ void MeshSkinned::CalcInterpolatedScaling(aiVector3D &Out, float AnimationTimeTi
     float t2 = (float)pNodeAnim->mScalingKeys[NextScalingIndex].mTime;
     float DeltaTime = t2 - t1;
     float Factor = (AnimationTimeTicks - (float)t1) / DeltaTime;
+    Factor = glm::clamp(Factor, 0.0f, 1.0f);
 
     //printf("Factor: %f\n", Factor);
 

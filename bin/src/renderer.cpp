@@ -68,8 +68,8 @@ bool Renderer::Init()
 
     pMesh1 = new MeshSkinned();
     //if (!pMesh1->LoadMesh("assets/wine_barrel/wine_barrel_01_4k.obj"))
-    //if (!pMesh1->LoadMesh("assets/example/example1.glb"))
-    if (!pMesh1->LoadMesh("assets/bob/boblampclean.md5mesh"))
+    if (!pMesh1->LoadMesh("assets/example/example1.glb"))
+    //if (!pMesh1->LoadMesh("assets/bob/boblampclean.md5mesh"))
     {
         return false;
     }

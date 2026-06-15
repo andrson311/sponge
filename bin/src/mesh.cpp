@@ -6,26 +6,6 @@
 #define TEX_COORD_LOCATION 1
 #define NORMAL_LOCATION 2
 
-std::string GetFullPath(const std::string& Dir, const aiString& Path)
-{
-    std::string p(Path.data);
-    std::replace(p.begin(), p.end(), '\\', '/');
-
-    if (p.size() >= 2 && std::isalpha((unsigned char)p[0]) && p[1] == ':') {
-        p = p.substr(2);
-    }
-
-    if (p.size() >= 2 && p.substr(0, 2) == "./") {
-        p = p.substr(2);
-    }
-
-    if (!p.empty() && p[0] == '/') {
-        p = p.substr(1);
-    }
-
-    return Dir + "/" + p;
-}
-
 Mesh::~Mesh()
 {
     Clear();

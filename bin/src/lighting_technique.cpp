@@ -1,13 +1,9 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "../inc/lighting_technique.h"
 
-void DirectionalLight::CalcLocalDirection(const glm::mat4 &World)
+void DirectionalLight::CalcLocalDirection(const WorldTrans &worldTransform)
 {
-    glm::mat3 World3f(World);
-
-    glm::mat3 WorldToLocal = glm::transpose(World3f);
-
-    LocalDirection = glm::normalize(WorldToLocal * WorldDirection);
+    LocalDirection = worldTransform.WorldDirToLocalDir(WorldDirection);
 }
 
 void PointLight::CalcLocalPosition(const WorldTrans &worldTransform)
@@ -56,7 +52,7 @@ bool LightingTechnique::Init()
     CameraLocalPosLoc = GetUniformLocation("gCameraLocalPos");
     NumPointLightsLocation = GetUniformLocation("gNumPointLights");
     NumSpotLightsLocation = GetUniformLocation("gNumSpotLights");
-    
+
     if (WVPLoc == 0xFFFFFFFF ||
         samplerLoc == 0xFFFFFFFF ||
         samplerSpecularExponentLoc == 0xFFFFFFFF ||
@@ -111,7 +107,8 @@ bool LightingTechnique::Init()
         }
     }
 
-    for (u_int i = 0 ; i < std::size(SpotLightsLocation) ; i++) {
+    for (u_int i = 0; i < std::size(SpotLightsLocation); i++)
+    {
         char Name[128];
         memset(Name, 0, sizeof(Name));
         snprintf(Name, sizeof(Name), "gSpotLights[%d].Base.Base.Color", i);
@@ -149,10 +146,19 @@ bool LightingTechnique::Init()
             SpotLightsLocation[i].DiffuseIntensity == INVALID_UNIFORM_LOCATION ||
             SpotLightsLocation[i].Atten.Constant == INVALID_UNIFORM_LOCATION ||
             SpotLightsLocation[i].Atten.Linear == INVALID_UNIFORM_LOCATION ||
-            SpotLightsLocation[i].Atten.Exp == INVALID_UNIFORM_LOCATION) {
+            SpotLightsLocation[i].Atten.Exp == INVALID_UNIFORM_LOCATION)
+        {
 
             return false;
         }
+    }
+
+    for (u_int i = 0; i < std::size(m_boneLocation); i++)
+    {
+        char Name[128];
+        memset(Name, 0, sizeof(Name));
+        snprintf(Name, sizeof(Name), "gBones[%d]", i);
+        m_boneLocation[i] = GetUniformLocation(Name);
     }
 
     return true;
@@ -215,17 +221,18 @@ void LightingTechnique::SetPointLights(u_int NumLights, const PointLight *pLight
     }
 }
 
-void LightingTechnique::SetSpotLights(uint NumLights, const SpotLight* pLights)
+void LightingTechnique::SetSpotLights(u_int NumLights, const SpotLight *pLights)
 {
     glUniform1i(NumSpotLightsLocation, NumLights);
 
-    for (uint i = 0; i < NumLights; i++) {
+    for (uint i = 0; i < NumLights; i++)
+    {
         glUniform3f(SpotLightsLocation[i].Color,
-            pLights[i].Color.x, pLights[i].Color.y, pLights[i].Color.z);
+                    pLights[i].Color.x, pLights[i].Color.y, pLights[i].Color.z);
         glUniform1f(SpotLightsLocation[i].AmbientIntensity, pLights[i].AmbientIntensity);
         glUniform1f(SpotLightsLocation[i].DiffuseIntensity, pLights[i].DiffuseIntensity);
 
-        const glm::vec3& LocalPos = pLights[i].GetLocalPosition();
+        const glm::vec3 &LocalPos = pLights[i].GetLocalPosition();
         glUniform3f(SpotLightsLocation[i].Position, LocalPos.x, LocalPos.y, LocalPos.z);
 
         glm::vec3 Direction = glm::normalize(pLights[i].GetLocalDirection());
@@ -234,7 +241,17 @@ void LightingTechnique::SetSpotLights(uint NumLights, const SpotLight* pLights)
         glUniform1f(SpotLightsLocation[i].Cutoff, cosf(glm::radians(pLights[i].Cutoff)));
 
         glUniform1f(SpotLightsLocation[i].Atten.Constant, pLights[i].Attenuation.Constant);
-        glUniform1f(SpotLightsLocation[i].Atten.Linear,   pLights[i].Attenuation.Linear);
-        glUniform1f(SpotLightsLocation[i].Atten.Exp,      pLights[i].Attenuation.Exp);
+        glUniform1f(SpotLightsLocation[i].Atten.Linear, pLights[i].Attenuation.Linear);
+        glUniform1f(SpotLightsLocation[i].Atten.Exp, pLights[i].Attenuation.Exp);
     }
+}
+
+void LightingTechnique::SetBoneTransform(uint Index, const glm::mat4 &Transform)
+{
+    if (Index >= MAX_BONES)
+    {
+        return;
+    }
+    
+    glUniformMatrix4fv(m_boneLocation[Index], 1, GL_FALSE, glm::value_ptr(Transform));
 }

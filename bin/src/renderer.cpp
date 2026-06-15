@@ -15,10 +15,11 @@ Renderer::Renderer()
     glCullFace(GL_BACK);
     glEnable(GL_DEPTH_TEST);
 
-    dirLight.AmbientIntensity = 0.5;
-    dirLight.DiffuseIntensity = 2.0f;
-    dirLight.WorldDirection = glm::vec3(-1.0f, 0.0f, 0.0f);
+    //dirLight.AmbientIntensity = 1.0f;
+    //dirLight.DiffuseIntensity = 1.0f;
+    //dirLight.WorldDirection = glm::vec3(-1.0f, 0.0f, 0.0f);
 
+    pointLights[0].AmbientIntensity = 1.0f;
     pointLights[0].DiffuseIntensity = 1.0f;
     pointLights[0].Color = glm::vec3(1.0f);
     pointLights[0].Attenuation.Linear = 0.2f;
@@ -47,24 +48,9 @@ Renderer::~Renderer()
         delete pGameCamera;
     }
 
-    if (pTerrain)
-    {
-        delete pTerrain;
-    }
-
     if (pMesh1)
     {
         delete pMesh1;
-    }
-
-    if (pMesh2)
-    {
-        delete pMesh2;
-    }
-
-    if (pLightingTech)
-    {
-        delete pLightingTech;
     }
 }
 
@@ -80,20 +66,10 @@ bool Renderer::Init()
         CameraTarget,
         CameraUp);
 
-    pTerrain = new Mesh();
-    if (!pTerrain->LoadMesh("assets/box_terrain/box_terrain.obj"))
-    {
-        return false;
-    }
-
-    pMesh1 = new Mesh();
-    if (!pMesh1->LoadMesh("assets/zombie/Zombie.obj"))
-    {
-        return false;
-    }
-
-    pMesh2 = new Mesh();
-    if (!pMesh2->LoadMesh("assets/vintage_grandfather_clock/vintage_grandfather_clock_01_4k.obj"))
+    pMesh1 = new MeshSkinned();
+    //if (!pMesh1->LoadMesh("assets/wine_barrel/wine_barrel_01_4k.obj"))
+    //if (!pMesh1->LoadMesh("assets/example/example1.glb"))
+    if (!pMesh1->LoadMesh("assets/bob/boblampclean.md5mesh"))
     {
         return false;
     }
@@ -107,6 +83,8 @@ bool Renderer::Init()
     pLightingTech->Enable();
     pLightingTech->SetTextureUnit(COLOR_TEXTURE_UNIT_INDEX);
     pLightingTech->SetSpecularExponentTextureUnit(SPECULAR_TEXTURE_UNIT_INDEX);
+
+    StartTimeMillis = GetCurrentTimeMillis();
 
     return true;
 }
@@ -124,12 +102,11 @@ void Renderer::RenderSceneCB()
     glm::mat4 Projection = glm::perspective(
         glm::radians(FOV), aspectRatio, zNear, zFar);
 
-    counter += 0.01f;
+    WorldTrans &worldTransform = pMesh1->GetWorldTransform();
 
-    WorldTrans &worldTransform = pTerrain->GetWorldTransform();
-
-    worldTransform.SetRotation(0.0f, 0.0f, 0.0f);
-    worldTransform.SetPosition(0.0f, 0.0f, 10.0f);
+    worldTransform.SetRotation(-90.0f, 0.0f, 180.0f);
+    worldTransform.SetPosition(0.0f, 0.0f, 0.0f);
+    worldTransform.SetScale(0.1f);
 
     glm::mat4 World = worldTransform.GetMatrix();
 
@@ -139,13 +116,13 @@ void Renderer::RenderSceneCB()
     pLightingTech->SetWVP(WVP);
     //pLightingTech->SetDirectionalLight(dirLight);
 
-    pointLights[0].WorldPosition.x = -10.0f;
-    pointLights[0].WorldPosition.y = 2.0f;
-    pointLights[0].WorldPosition.z = 0.0f;
+    pointLights[0].WorldPosition.x = 0.0f;
+    pointLights[0].WorldPosition.y = 1.0f;
+    pointLights[0].WorldPosition.z = 1.0f;
     pointLights[0].CalcLocalPosition(worldTransform);
 
     pointLights[1].WorldPosition.x = 10.0f;
-    pointLights[1].WorldPosition.y = sinf(counter) * 4 + 4;
+    pointLights[1].WorldPosition.y = 1.0f;
     pointLights[1].WorldPosition.z = 0.0f;
     pointLights[1].CalcLocalPosition(worldTransform);
 
@@ -161,58 +138,23 @@ void Renderer::RenderSceneCB()
 
     pLightingTech->SetSpotLights(2, spotLights);
 
-    pLightingTech->SetMaterial(pTerrain->GetMaterial());
+    pLightingTech->SetMaterial(pMesh1->GetMaterial());
 
     glm::vec3 CameraLocalPos3f = worldTransform.WorldPosToLocalPos(pGameCamera->GetPos());
     pLightingTech->SetCameraLocalPos(CameraLocalPos3f);
 
-    pTerrain->Render();
+    long long CurrentTimeMillis = GetCurrentTimeMillis();
+    float AnimationTimeSec = ((float)(CurrentTimeMillis - StartTimeMillis)) / 1000.0f;
 
-    WorldTrans &mesh1WorldTransform = pMesh1->GetWorldTransform();
+    std::vector<glm::mat4> Transforms;
+    pMesh1->GetBoneTransforms(AnimationTimeSec, Transforms);
 
-    mesh1WorldTransform.SetPosition(0.0f, 4.0f, 0.0f);
-
-    World = mesh1WorldTransform.GetMatrix();
-    WVP = Projection * View * World;
-    pLightingTech->SetWVP(WVP);
-
-    pointLights[0].CalcLocalPosition(mesh1WorldTransform);
-    pointLights[1].CalcLocalPosition(mesh1WorldTransform);
-    pLightingTech->SetPointLights(2, pointLights);
-
-    spotLights[0].CalcLocalDirectionAndPosition(mesh1WorldTransform);
-    spotLights[1].CalcLocalDirectionAndPosition(mesh1WorldTransform);
-    pLightingTech->SetSpotLights(2, spotLights);
-
-    pLightingTech->SetMaterial(pMesh1->GetMaterial());
-
-    CameraLocalPos3f = mesh1WorldTransform.WorldPosToLocalPos(pGameCamera->GetPos());
-    pLightingTech->SetCameraLocalPos(CameraLocalPos3f);
-
+    for (u_int i = 0; i < Transforms.size(); i++)
+    {
+        pLightingTech->SetBoneTransform(i, Transforms[i]);
+    }
+    
     pMesh1->Render();
-
-    WorldTrans &mesh2WorldTransform = pMesh2->GetWorldTransform();
-    mesh2WorldTransform.SetPosition(0.0f, 1.0f, 1.0f);
-
-    World = mesh2WorldTransform.GetMatrix();
-    WVP = Projection * View * World;
-
-    pLightingTech->SetWVP(WVP);
-
-    pointLights[0].CalcLocalPosition(mesh2WorldTransform);
-    pointLights[1].CalcLocalPosition(mesh2WorldTransform);
-    pLightingTech->SetPointLights(2, pointLights);
-
-    spotLights[0].CalcLocalDirectionAndPosition(mesh2WorldTransform);
-    spotLights[1].CalcLocalDirectionAndPosition(mesh2WorldTransform);
-    pLightingTech->SetSpotLights(2, spotLights);
-
-    pLightingTech->SetMaterial(pMesh2->GetMaterial());
-
-    CameraLocalPos3f = mesh2WorldTransform.WorldPosToLocalPos(pGameCamera->GetPos());
-    pLightingTech->SetCameraLocalPos(CameraLocalPos3f);
-
-    pMesh2->Render();
 
     glutPostRedisplay();
     glutSwapBuffers();

@@ -16,7 +16,7 @@ class DirectionalLight : public BaseLight
 {
 public:
     glm::vec3 WorldDirection = glm::vec3(0.0f);
-    void CalcLocalDirection(const glm::mat4 &World);
+    void CalcLocalDirection(const WorldTrans &worldTransform);
     const glm::vec3 &GetLocalDirection() const { return LocalDirection; }
 
 private:
@@ -71,9 +71,10 @@ public:
     void SetSpecularExponentTextureUnit(u_int TextureUnit);
     void SetDirectionalLight(const DirectionalLight &Light);
     void SetPointLights(u_int NumLights, const PointLight *pLights);
-    void SetSpotLights(u_int NumLights, const SpotLight* pLights);
+    void SetSpotLights(u_int NumLights, const SpotLight *pLights);
     void SetCameraLocalPos(const glm::vec3 &CameraLocalPos);
     void SetMaterial(const Material &material);
+    void SetBoneTransform(u_int Index, const glm::mat4 &Transform);
 
 private:
     GLint WVPLoc;
@@ -129,4 +130,6 @@ private:
             GLuint Exp;
         } Atten;
     } SpotLightsLocation[MAX_SPOT_LIGHTS];
+
+    GLuint m_boneLocation[MAX_BONES];
 };

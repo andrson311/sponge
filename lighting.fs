@@ -6,6 +6,8 @@ const int MAX_SPOT_LIGHTS = 2;
 in vec2 TexCoord0;
 in vec3 Normal0;
 in vec3 LocalPos0;
+flat in ivec4 BoneIDs0;
+in vec4 Weights0;
 
 out vec4 FragColor;
 
@@ -73,12 +75,11 @@ vec4 CalcLightInternal(BaseLight Light, vec3 LightDirection, vec3 Normal) {
         vec3 PixelToCamera = normalize(gCameraLocalPos - LocalPos0);
         vec3 LightReflect = normalize(reflect(LightDirection, Normal));
         float SpecularFactor = dot(PixelToCamera, LightReflect);
-
         if(SpecularFactor > 0) {
             float SpecularExponent = texture(gSamplerSpecularExponent, TexCoord0).r * 255.0;
             SpecularFactor = pow(SpecularFactor, SpecularExponent);
             SpecularColor = vec4(Light.Color, 1.0) *
-                Light.DiffuseIntensity *
+                Light.DiffuseIntensity * // using the diffuse intensity for diffuse/specular
                 vec4(gMaterial.SpecularColor, 1.0) *
                 SpecularFactor;
         }
@@ -108,7 +109,7 @@ vec4 CalcSpotLight(SpotLight l, vec3 Normal) {
     vec3 LightToPixel = normalize(LocalPos0 - l.Base.LocalPos);
     float SpotFactor = dot(LightToPixel, l.Direction);
 
-    if (SpotFactor > l.Cutoff) {
+    if(SpotFactor > l.Cutoff) {
         vec4 Color = CalcPointLight(l.Base, Normal);
         float SpotLightIntensity = (1.0 - (1.0 - SpotFactor) / (1.0 - l.Cutoff));
         return Color * SpotLightIntensity;
@@ -118,7 +119,6 @@ vec4 CalcSpotLight(SpotLight l, vec3 Normal) {
 }
 
 void main() {
-
     vec3 Normal = normalize(Normal0);
     vec4 TotalLight = CalcDirectionalLight(Normal);
 

@@ -6,6 +6,7 @@
 #include "camera.h"
 #include "world_transform.h"
 #include "mesh.h"
+#include "mesh_skinned.h"
 #include "lighting_technique.h"
 
 #define WINDOW_WIDTH 1280
@@ -51,17 +52,17 @@ private:
     GLuint WVPLocation;
     GLuint SamplerLocation;
     Camera *pGameCamera = NULL;
-    Mesh* pTerrain = NULL;
-    Mesh* pMesh1 = NULL;
-    Mesh* pMesh2 = NULL;
+    MeshSkinned* pMesh1 = NULL;
     LightingTechnique* pLightingTech = NULL;
     DirectionalLight dirLight;
     PointLight pointLights[LightingTechnique::MAX_POINT_LIGHTS];
     SpotLight spotLights[LightingTechnique::MAX_SPOT_LIGHTS];
+    long long StartTimeMillis = 0;
     
     float FOV   = 45.0f;
     float zNear = 1.0f;
     float zFar  = 100.0f;
 
     float counter = 0.0f;
+    int DisplayBoneIndex = 0;
 };

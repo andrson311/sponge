@@ -3,6 +3,8 @@
 #include <glm/glm.hpp>
 #include "texture.h"
 
+#define INVALID_MATERIAL 0xFFFFFFFF
+
 class Material
 {
 public:

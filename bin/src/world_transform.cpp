@@ -15,6 +15,11 @@ void WorldTrans::SetPosition(float x, float y, float z)
     m_pos = glm::vec3(x, y, z);
 }
 
+void WorldTrans::SetPosition(const glm::vec3 &pos)
+{
+    m_pos = pos;
+}
+
 void WorldTrans::Rotate(float x, float y, float z)
 {
     m_rotation += glm::vec3(x, y, z);

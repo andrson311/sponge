@@ -15,13 +15,14 @@
                 "-g",
                 "${file}",
                 "bin/src/*.cpp",
-                "-I${workspaceFolder}/includes",
+                "-I${workspaceFolder}/bin/inc",
                 "-o",
                 "${workspaceFolder}/build/${fileBasenameNoExtension}",
                 "-lGL",
                 "-lGLU",
                 "-lglut",
                 "-lGLEW",
+                "-lglfw",
                 "-lassimp"
             ],
             "options": {

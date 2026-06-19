@@ -15,10 +15,10 @@ void Mesh::Clear()
 {
     for (auto &mat : m_Materials)
     {
-        delete mat.pDiffuse;
-        delete mat.pSpecular;
-        mat.pDiffuse = NULL;
-        mat.pSpecular = NULL;
+        delete mat.pTextures[TEX_TYPE_BASE];
+        delete mat.pTextures[TEX_TYPE_SPECULAR];
+        mat.pTextures[TEX_TYPE_BASE] = NULL;
+        mat.pTextures[TEX_TYPE_SPECULAR] = NULL;
     }
 
     if (m_Buffers[0] != 0)
@@ -191,7 +191,7 @@ bool Mesh::InitMaterials(const aiScene *pScene, const std::string &Filename)
     return true;
 }
 
-void Mesh::LoadTextures(const std::string& Dir, const aiMaterial* pMaterial, int Index)
+void Mesh::LoadTextures(const std::string &Dir, const aiMaterial *pMaterial, int Index)
 {
     LoadDiffuseTexture(Dir, pMaterial, Index);
     LoadSpecularTexture(Dir, pMaterial, Index);
@@ -199,7 +199,7 @@ void Mesh::LoadTextures(const std::string& Dir, const aiMaterial* pMaterial, int
 
 void Mesh::LoadDiffuseTexture(const std::string &Dir, const aiMaterial *pMaterial, int MaterialIndex)
 {
-    m_Materials[MaterialIndex].pDiffuse = NULL;
+    m_Materials[MaterialIndex].pTextures[TEX_TYPE_BASE] = NULL;
 
     if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0)
     {
@@ -222,16 +222,16 @@ void Mesh::LoadDiffuseTexture(const std::string &Dir, const aiMaterial *pMateria
 void Mesh::LoadDiffuseTextureEmbedded(const aiTexture *paiTexture, int MaterialIndex)
 {
     printf("Embedded diffuse texture type '%s'\n", paiTexture->achFormatHint);
-    m_Materials[MaterialIndex].pDiffuse = new Texture(GL_TEXTURE_2D);
-    m_Materials[MaterialIndex].pDiffuse->Load(paiTexture->mWidth, paiTexture->pcData, true);
+    m_Materials[MaterialIndex].pTextures[TEX_TYPE_BASE] = new Texture(GL_TEXTURE_2D);
+    m_Materials[MaterialIndex].pTextures[TEX_TYPE_BASE]->Load(paiTexture->mWidth, paiTexture->pcData, true);
 }
 
 void Mesh::LoadDiffuseTextureFromFile(const std::string &Dir, const aiString &Path, int MaterialIndex)
 {
     std::string FullPath = GetFullPath(Dir, Path);
-    m_Materials[MaterialIndex].pDiffuse = new Texture(GL_TEXTURE_2D, FullPath);
+    m_Materials[MaterialIndex].pTextures[TEX_TYPE_BASE] = new Texture(GL_TEXTURE_2D, FullPath);
 
-    if (!m_Materials[MaterialIndex].pDiffuse->Load(true))
+    if (!m_Materials[MaterialIndex].pTextures[TEX_TYPE_BASE]->Load(true))
     {
         printf("Error loading diffuse texture '%s'\n", FullPath.c_str());
         exit(1);
@@ -244,7 +244,7 @@ void Mesh::LoadDiffuseTextureFromFile(const std::string &Dir, const aiString &Pa
 
 void Mesh::LoadSpecularTexture(const std::string &Dir, const aiMaterial *pMaterial, int MaterialIndex)
 {
-    m_Materials[MaterialIndex].pSpecular = NULL;
+    m_Materials[MaterialIndex].pTextures[TEX_TYPE_SPECULAR] = NULL;
 
     if (pMaterial->GetTextureCount(aiTextureType_SHININESS) > 0)
     {
@@ -267,16 +267,16 @@ void Mesh::LoadSpecularTexture(const std::string &Dir, const aiMaterial *pMateri
 void Mesh::LoadSpecularTextureEmbedded(const aiTexture *paiTexture, int MaterialIndex)
 {
     printf("Embedded specular texture type '%s'\n", paiTexture->achFormatHint);
-    m_Materials[MaterialIndex].pSpecular = new Texture(GL_TEXTURE_2D);
-    m_Materials[MaterialIndex].pSpecular->Load(paiTexture->mWidth, paiTexture->pcData, false);
+    m_Materials[MaterialIndex].pTextures[TEX_TYPE_SPECULAR] = new Texture(GL_TEXTURE_2D);
+    m_Materials[MaterialIndex].pTextures[TEX_TYPE_SPECULAR]->Load(paiTexture->mWidth, paiTexture->pcData, false);
 }
 
 void Mesh::LoadSpecularTextureFromFile(const std::string &Dir, const aiString &Path, int MaterialIndex)
 {
     std::string FullPath = GetFullPath(Dir, Path);
-    m_Materials[MaterialIndex].pSpecular = new Texture(GL_TEXTURE_2D, FullPath);
+    m_Materials[MaterialIndex].pTextures[TEX_TYPE_SPECULAR] = new Texture(GL_TEXTURE_2D, FullPath);
 
-    if (!m_Materials[MaterialIndex].pSpecular->Load(false))
+    if (!m_Materials[MaterialIndex].pTextures[TEX_TYPE_SPECULAR]->Load(false))
     {
         printf("Error loading specular texture '%s'\n", FullPath.c_str());
         exit(1);
@@ -293,25 +293,38 @@ void Mesh::LoadColors(const aiMaterial *pMaterial, int index)
     if (pMaterial->Get(AI_MATKEY_COLOR_AMBIENT, AmbientColor) == AI_SUCCESS)
     {
         printf("Loaded ambient color [%f %f %f]\n", AmbientColor.r, AmbientColor.g, AmbientColor.b);
-        m_Materials[index].AmbientColor = glm::vec3(AmbientColor.r, AmbientColor.g, AmbientColor.b);
+        m_Materials[index].AmbientColor = glm::vec4(AmbientColor.r, AmbientColor.g, AmbientColor.b, 1.0f);
+
+        if (glm::length(glm::vec3(m_Materials[index].AmbientColor)) < 0.0001f)
+        {
+            m_Materials[index].AmbientColor = glm::vec4(1.0f);
+        }
     }
     else
     {
-        m_Materials[index].AmbientColor = glm::vec3(1.0f);
+        m_Materials[index].AmbientColor = glm::vec4(1.0f);
     }
 
     aiColor3D DiffuseColor(0.0f, 0.0f, 0.0f);
     if (pMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, DiffuseColor) == AI_SUCCESS)
     {
         printf("Loaded diffuse color [%f %f %f]\n", DiffuseColor.r, DiffuseColor.g, DiffuseColor.b);
-        m_Materials[index].DiffuseColor = glm::vec3(DiffuseColor.r, DiffuseColor.g, DiffuseColor.b);
+        m_Materials[index].DiffuseColor = glm::vec4(DiffuseColor.r, DiffuseColor.g, DiffuseColor.b, 1.0f);
+    }
+    else
+    {
+        m_Materials[index].DiffuseColor = glm::vec4(1.0f);
     }
 
     aiColor3D SpecularColor(0.0f, 0.0f, 0.0f);
     if (pMaterial->Get(AI_MATKEY_COLOR_SPECULAR, SpecularColor) == AI_SUCCESS)
     {
         printf("Loaded specular color [%f %f %f]\n", SpecularColor.r, SpecularColor.g, SpecularColor.b);
-        m_Materials[index].SpecularColor = glm::vec3(SpecularColor.r, SpecularColor.g, SpecularColor.b);
+        m_Materials[index].SpecularColor = glm::vec4(SpecularColor.r, SpecularColor.g, SpecularColor.b, 1.0f);
+    }
+    else
+    {
+        m_Materials[index].SpecularColor = glm::vec4(1.0f);
     }
 }
 
@@ -324,14 +337,14 @@ void Mesh::Render()
         u_int MaterialIndex = m_Meshes[i].MaterialIndex;
         assert(MaterialIndex < m_Materials.size());
 
-        if (m_Materials[MaterialIndex].pDiffuse)
+        if (m_Materials[MaterialIndex].pTextures[TEX_TYPE_BASE])
         {
-            m_Materials[MaterialIndex].pDiffuse->Bind(COLOR_TEXTURE_UNIT);
+            m_Materials[MaterialIndex].pTextures[TEX_TYPE_BASE]->Bind(COLOR_TEXTURE_UNIT);
         }
 
-        if (m_Materials[MaterialIndex].pSpecular)
+        if (m_Materials[MaterialIndex].pTextures[TEX_TYPE_SPECULAR])
         {
-            m_Materials[MaterialIndex].pSpecular->Bind(SPECULAR_TEXTURE_UNIT);
+            m_Materials[MaterialIndex].pTextures[TEX_TYPE_SPECULAR]->Bind(SPECULAR_TEXTURE_UNIT);
         }
 
         glDrawElementsBaseVertex(
@@ -341,6 +354,82 @@ void Mesh::Render()
             (void *)(sizeof(u_int) * m_Meshes[i].BaseIndex),
             m_Meshes[i].BaseVertex);
     }
+
+    glBindVertexArray(0);
+}
+
+void Mesh::Render(IRenderCallbacks *pRenderCallbacks)
+{
+    glBindVertexArray(m_VAO);
+
+    for (u_int i = 0; i < m_Meshes.size(); i++)
+    {
+        u_int MaterialIndex = m_Meshes[i].MaterialIndex;
+        assert(MaterialIndex < m_Materials.size());
+
+        if (pRenderCallbacks)
+        {
+            pRenderCallbacks->DrawStartCB(i);
+            pRenderCallbacks->SetMaterial(m_Materials[MaterialIndex]);
+        }
+
+        if (m_Materials[MaterialIndex].pTextures[TEX_TYPE_BASE])
+        {
+            m_Materials[MaterialIndex].pTextures[TEX_TYPE_BASE]->Bind(COLOR_TEXTURE_UNIT);
+        }
+        else if (pRenderCallbacks)
+        {
+            pRenderCallbacks->DisableDiffuseTexture();
+        }
+
+        if (m_Materials[MaterialIndex].pTextures[TEX_TYPE_SPECULAR])
+        {
+            m_Materials[MaterialIndex].pTextures[TEX_TYPE_SPECULAR]->Bind(SPECULAR_TEXTURE_UNIT);
+
+            if (pRenderCallbacks)
+            {
+                pRenderCallbacks->ControlSpecularExponent(true);
+            }
+        }
+        else if (pRenderCallbacks)
+        {
+            pRenderCallbacks->ControlSpecularExponent(false);
+        }
+
+        glDrawElementsBaseVertex(
+            GL_TRIANGLES,
+            m_Meshes[i].NumIndices,
+            GL_UNSIGNED_INT,
+            (void *)(sizeof(u_int) * m_Meshes[i].BaseIndex),
+            m_Meshes[i].BaseVertex);
+    }
+
+    glBindVertexArray(0);
+}
+
+void Mesh::Render(u_int DrawIndex, u_int PrimID)
+{
+    glBindVertexArray(m_VAO);
+
+    u_int MaterialIndex = m_Meshes[DrawIndex].MaterialIndex;
+    assert(MaterialIndex < m_Materials.size());
+
+    if (m_Materials[MaterialIndex].pTextures[TEX_TYPE_BASE])
+    {
+        m_Materials[MaterialIndex].pTextures[TEX_TYPE_BASE]->Bind(COLOR_TEXTURE_UNIT);
+    }
+
+    if (m_Materials[MaterialIndex].pTextures[TEX_TYPE_SPECULAR])
+    {
+        m_Materials[MaterialIndex].pTextures[TEX_TYPE_SPECULAR]->Bind(COLOR_TEXTURE_UNIT);
+    }
+
+    glDrawElementsBaseVertex(
+        GL_TRIANGLES,
+        3,
+        GL_UNSIGNED_INT,
+        (void *)(sizeof(u_int) * (m_Meshes[DrawIndex].BaseIndex + PrimID * 3)),
+        m_Meshes[DrawIndex].BaseVertex);
 
     glBindVertexArray(0);
 }
@@ -360,14 +449,14 @@ void Mesh::Render(u_int NumInstances, const glm::mat4 *WVPMats, const glm::mat4 
         u_int MaterialIndex = m_Meshes[i].MaterialIndex;
         assert(MaterialIndex < m_Materials.size());
 
-        if (m_Materials[MaterialIndex].pDiffuse)
+        if (m_Materials[MaterialIndex].pTextures[TEX_TYPE_BASE])
         {
-            m_Materials[MaterialIndex].pDiffuse->Bind(COLOR_TEXTURE_UNIT);
+            m_Materials[MaterialIndex].pTextures[TEX_TYPE_BASE]->Bind(COLOR_TEXTURE_UNIT);
         }
 
-        if (m_Materials[MaterialIndex].pSpecular)
+        if (m_Materials[MaterialIndex].pTextures[TEX_TYPE_SPECULAR])
         {
-            m_Materials[MaterialIndex].pSpecular->Bind(SPECULAR_TEXTURE_UNIT);
+            m_Materials[MaterialIndex].pTextures[TEX_TYPE_SPECULAR]->Bind(SPECULAR_TEXTURE_UNIT);
         }
 
         glDrawElementsInstancedBaseVertex(
@@ -386,7 +475,7 @@ const Material &Mesh::GetMaterial()
 {
     for (u_int i = 0; i < m_Materials.size(); i++)
     {
-        if (m_Materials[i].AmbientColor != glm::vec3(0.0f))
+        if (m_Materials[i].AmbientColor != glm::vec4(0.0f))
         {
             return m_Materials[i];
         }

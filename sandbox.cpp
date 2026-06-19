@@ -13,14 +13,14 @@
 
 struct VertexBoneData
 {
-    u_int BoneIDs[MAX_NUM_BONES_PER_VERTEX] = {0};
+    unsigned int BoneIDs[MAX_NUM_BONES_PER_VERTEX] = {0};
     float Weights[MAX_NUM_BONES_PER_VERTEX] = {0.0f};
 
     VertexBoneData() {}
 
-    void AddBoneData(u_int BoneID, float Weight)
+    void AddBoneData(unsigned int BoneID, float Weight)
     {
-        for (u_int i = 0; i < std::size(BoneIDs); i++)
+        for (unsigned int i = 0; i < std::size(BoneIDs); i++)
         {
             if (Weights[i] == 0.0)
             {
@@ -37,7 +37,7 @@ struct VertexBoneData
 
 std::vector<VertexBoneData> vertex_to_bones;
 std::vector<int> mesh_base_vertex;
-std::map<std::string, u_int> bone_name_to_index_map;
+std::map<std::string, unsigned int> bone_name_to_index_map;
 
 int GetBoneId(const aiBone *pBone)
 {
@@ -64,12 +64,12 @@ void ParseSingleBone(int mesh_index, const aiBone *pBone)
     int bone_id = GetBoneId(pBone);
     printf("bone id %d\n", bone_id);
 
-    for (u_int i = 0; i < pBone->mNumWeights; i++)
+    for (unsigned int i = 0; i < pBone->mNumWeights; i++)
     {
         const aiVertexWeight &vw = pBone->mWeights[i];
         // printf("%d: vertex id %d weight %.2f\n", i, vw.mVertexId, vw.mWeight);
 
-        u_int global_vertex_id = mesh_base_vertex[mesh_index] + vw.mVertexId;
+        unsigned int global_vertex_id = mesh_base_vertex[mesh_index] + vw.mVertexId;
         printf("Vertex id %d ", global_vertex_id);
 
         assert(global_vertex_id < vertex_to_bones.size());
@@ -79,7 +79,7 @@ void ParseSingleBone(int mesh_index, const aiBone *pBone)
 
 void ParseMeshBones(int mesh_index, const aiMesh *pMesh)
 {
-    for (u_int i = 0; i < pMesh->mNumBones; i++)
+    for (unsigned int i = 0; i < pMesh->mNumBones; i++)
     {
         ParseSingleBone(mesh_index, pMesh->mBones[i]);
     }
@@ -95,7 +95,7 @@ void ParseMeshes(const aiScene *pScene)
 
     mesh_base_vertex.resize(pScene->mNumMeshes);
 
-    for (u_int i = 0; i < pScene->mNumMeshes; i++)
+    for (unsigned int i = 0; i < pScene->mNumMeshes; i++)
     {
         const aiMesh *pMesh = pScene->mMeshes[i];
         int num_vertices = pMesh->mNumVertices;

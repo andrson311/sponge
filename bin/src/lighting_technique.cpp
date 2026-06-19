@@ -17,19 +17,38 @@ void SpotLight::CalcLocalDirectionAndPosition(const WorldTrans &worldTransform)
     LocalDirection = worldTransform.WorldDirToLocalDir(WorldDirection);
 }
 
-bool LightingTechnique::Init()
+bool LightingTechnique::Init(int SubTech)
 {
     if (!Technique::Init())
     {
         return false;
     }
 
-    if (!AddShader(GL_VERTEX_SHADER, "lighting.vs"))
+    m_subTech = SubTech;
+
+    switch (SubTech)
     {
-        return false;
+    case SUBTECH_DEFAULT:
+        if (!AddShader(GL_VERTEX_SHADER, "bin/shaders/lighting.vs"))
+        {
+            return false;
+        }
+        break;
+
+    case SUBTECH_PASSTHROUGH_GS:
+        /* TODO: implement this */
+        break;
+
+    case SUBTECH_WIREFRAME_ON_MESH:
+        /* TODO: implement this */
+        break;
+
+    default:
+        printf("Invalid lighting subtechnique %d \n", SubTech);
+        exit(0);
     }
 
-    if (!AddShader(GL_FRAGMENT_SHADER, "lighting.fs"))
+    if (!AddShader(GL_FRAGMENT_SHADER, "bin/shaders/lighting.fs"))
     {
         return false;
     }
@@ -39,35 +58,135 @@ bool LightingTechnique::Init()
         return false;
     }
 
+    return InitCommon();
+}
+
+bool LightingTechnique::InitCommon()
+{
     WVPLoc = GetUniformLocation("gWVP");
+    WorldMatrixLoc = GetUniformLocation("gWorld");
+
+    if (m_subTech == SUBTECH_WIREFRAME_ON_MESH)
+    {
+        ViewportMatrixLoc = GetUniformLocation("gViewportMatrix");
+    }
+
+    LightWVPLoc = GetUniformLocation("gLightWVP");
     samplerLoc = GetUniformLocation("gSampler");
+
+    shadowMapLoc = GetUniformLocation("gShadowMap");
+    shadowCubeMapLoc = GetUniformLocation("gShadowCubeMap");
+    shadowMapWidthLoc = GetUniformLocation("gShadowMapWidth");
+    shadowMapHeightLoc = GetUniformLocation("gShadowMapHeight");
+    shadowMapFilterSizeLoc = GetUniformLocation("gShadowMapFilterSize");
+    shadowMapOffsetTextureLoc = GetUniformLocation("gShadowMapOffsetTexture");
+    shadowMapOffsetTextureSizeLoc = GetUniformLocation("gShadowMapOffsetTextureSize");
+    shadowMapOffsetFilterSizeLoc = GetUniformLocation("gShadowMapOffsetFilterSize");
+    shadowMapRandomRadiusLoc = GetUniformLocation("gShadowMapRandomRadius");
+
     samplerSpecularExponentLoc = GetUniformLocation("gSamplerSpecularExponent");
+
     materialLoc.AmbientColor = GetUniformLocation("gMaterial.AmbientColor");
     materialLoc.DiffuseColor = GetUniformLocation("gMaterial.DiffuseColor");
     materialLoc.SpecularColor = GetUniformLocation("gMaterial.SpecularColor");
+
     dirLightLoc.Color = GetUniformLocation("gDirectionalLight.Base.Color");
     dirLightLoc.AmbientIntensity = GetUniformLocation("gDirectionalLight.Base.AmbientIntensity");
     dirLightLoc.Direction = GetUniformLocation("gDirectionalLight.Direction");
     dirLightLoc.DiffuseIntensity = GetUniformLocation("gDirectionalLight.Base.DiffuseIntensity");
-    CameraLocalPosLoc = GetUniformLocation("gCameraLocalPos");
-    NumPointLightsLocation = GetUniformLocation("gNumPointLights");
-    NumSpotLightsLocation = GetUniformLocation("gNumSpotLights");
 
-    if (WVPLoc == 0xFFFFFFFF ||
-        samplerLoc == 0xFFFFFFFF ||
-        samplerSpecularExponentLoc == 0xFFFFFFFF ||
-        materialLoc.AmbientColor == 0xFFFFFFFF ||
-        materialLoc.DiffuseColor == 0xFFFFFFFF ||
-        materialLoc.SpecularColor == 0xFFFFFFFF ||
-        CameraLocalPosLoc == 0xFFFFFFFF ||
-        dirLightLoc.Color == 0xFFFFFFFF ||
-        dirLightLoc.DiffuseIntensity == 0xFFFFFFFF ||
-        dirLightLoc.Direction == 0xFFFFFFFF ||
-        dirLightLoc.AmbientIntensity == 0xFFFFFFFF ||
-        NumPointLightsLocation == INVALID_UNIFORM_LOCATION ||
-        NumSpotLightsLocation == INVALID_UNIFORM_LOCATION)
+    CameraLocalPosLoc = GetUniformLocation("gCameraLocalPos");
+    CameraWorldPosLoc = GetUniformLocation("gCameraWorldPos");
+
+    NumPointLightsLoc = GetUniformLocation("gNumPointLights");
+    NumSpotLightsLoc = GetUniformLocation("gNumSpotLights");
+
+    ColorModLoc = GetUniformLocation("gColorMod");
+    ColorAddLoc = GetUniformLocation("gColorAdd");
+
+    EnableRimLightLoc = GetUniformLocation("gRimLightEnabled");
+    EnableCellShadingLoc = GetUniformLocation("gCellShadingEnabled");
+    EnableSpecularExponentLoc = GetUniformLocation("gEnableSpecularExponent");
+
+    FogStartLoc = GetUniformLocation("gFogStart");
+    FogEndLoc = GetUniformLocation("gFogEnd");
+    FogColorLoc = GetUniformLocation("gFogColor");
+    ExpFogDensityLoc = GetUniformLocation("gExpFogDensity");
+    ExpSquaredFogEnabledLoc = GetUniformLocation("gExpSquaredFogEnabled");
+    LayeredFogTopLoc = GetUniformLocation("gLayeredFogTop");
+    FogTimeLoc = GetUniformLocation("gFogTime");
+
+    IsPBRLoc = GetUniformLocation("gIsPBR");
+    PBRMaterialLoc.Roughness = GetUniformLocation("gPBRmaterial.Roughness");
+    PBRMaterialLoc.IsMetal = GetUniformLocation("gPBRmaterial.IsMetal");
+    PBRMaterialLoc.Color = GetUniformLocation("gPBRmaterial.Color");
+    PBRMaterialLoc.IsAlbedo = GetUniformLocation("gPBRmaterial.IsAlbedo");
+
+    ClipPlaneLoc = GetUniformLocation("gClipPlane");
+    WireframeWidthLoc = GetUniformLocation("gWireframeWidth");
+    WireframeColorLoc = GetUniformLocation("gWireframeColor");
+
+    AlbedoLoc = GetUniformLocation("gAlbedo");
+    RoughnessLoc = GetUniformLocation("gRoughness");
+    MetallicLoc = GetUniformLocation("gMetallic");
+    NormalMapLoc = glGetUniformLocation(m_shaderProg, "gNormalMap");
+
+    if (WVPLoc == INVALID_UNIFORM_LOCATION ||
+        WorldMatrixLoc == INVALID_UNIFORM_LOCATION ||
+        LightWVPLoc == INVALID_UNIFORM_LOCATION ||
+        samplerLoc == INVALID_UNIFORM_LOCATION ||
+        shadowMapLoc == INVALID_UNIFORM_LOCATION ||
+        shadowCubeMapLoc == INVALID_UNIFORM_LOCATION ||
+        shadowMapWidthLoc == INVALID_UNIFORM_LOCATION ||
+        shadowMapHeightLoc == INVALID_UNIFORM_LOCATION ||
+        shadowMapFilterSizeLoc == INVALID_UNIFORM_LOCATION ||
+        shadowMapOffsetTextureLoc == INVALID_UNIFORM_LOCATION ||
+        shadowMapOffsetTextureSizeLoc == INVALID_UNIFORM_LOCATION ||
+        shadowMapOffsetFilterSizeLoc == INVALID_UNIFORM_LOCATION ||
+        shadowMapRandomRadiusLoc == INVALID_UNIFORM_LOCATION ||
+        samplerSpecularExponentLoc == INVALID_UNIFORM_LOCATION ||
+        materialLoc.AmbientColor == INVALID_UNIFORM_LOCATION ||
+        materialLoc.DiffuseColor == INVALID_UNIFORM_LOCATION ||
+        materialLoc.SpecularColor == INVALID_UNIFORM_LOCATION ||
+        CameraLocalPosLoc == INVALID_UNIFORM_LOCATION ||
+        CameraWorldPosLoc == INVALID_UNIFORM_LOCATION ||
+        dirLightLoc.Color == INVALID_UNIFORM_LOCATION ||
+        dirLightLoc.DiffuseIntensity == INVALID_UNIFORM_LOCATION ||
+        dirLightLoc.Direction == INVALID_UNIFORM_LOCATION ||
+        dirLightLoc.AmbientIntensity == INVALID_UNIFORM_LOCATION ||
+        NumPointLightsLoc == INVALID_UNIFORM_LOCATION ||
+        NumSpotLightsLoc == INVALID_UNIFORM_LOCATION ||
+        EnableRimLightLoc == INVALID_UNIFORM_LOCATION ||
+        EnableCellShadingLoc == INVALID_UNIFORM_LOCATION ||
+        EnableSpecularExponentLoc == INVALID_UNIFORM_LOCATION ||
+        FogStartLoc == INVALID_UNIFORM_LOCATION ||
+        FogEndLoc == INVALID_UNIFORM_LOCATION ||
+        FogColorLoc == INVALID_UNIFORM_LOCATION ||
+        ExpFogDensityLoc == INVALID_UNIFORM_LOCATION ||
+        ExpSquaredFogEnabledLoc == INVALID_UNIFORM_LOCATION ||
+        LayeredFogTopLoc == INVALID_UNIFORM_LOCATION ||
+        FogTimeLoc == INVALID_UNIFORM_LOCATION ||
+        ColorModLoc == INVALID_UNIFORM_LOCATION ||
+        ColorAddLoc == INVALID_UNIFORM_LOCATION ||
+        IsPBRLoc == INVALID_UNIFORM_LOCATION ||
+        PBRMaterialLoc.Roughness == INVALID_UNIFORM_LOCATION ||
+        PBRMaterialLoc.IsMetal == INVALID_UNIFORM_LOCATION ||
+        PBRMaterialLoc.Color == INVALID_UNIFORM_LOCATION ||
+        PBRMaterialLoc.IsAlbedo == INVALID_UNIFORM_LOCATION ||
+        ClipPlaneLoc == INVALID_UNIFORM_LOCATION
+    )
     {
         return false;
+    }
+
+    if (m_subTech == SUBTECH_WIREFRAME_ON_MESH)
+    {
+        if (ViewportMatrixLoc == INVALID_UNIFORM_LOCATION ||
+            WireframeWidthLoc == INVALID_UNIFORM_LOCATION ||
+            WireframeColorLoc == INVALID_UNIFORM_LOCATION)
+        {
+            return false;
+        }
     }
 
     for (u_int i = 0; i < std::size(PointLightsLocation); i++)
@@ -80,11 +199,14 @@ bool LightingTechnique::Init()
         snprintf(Name, sizeof(Name), "gPointLights[%d].Base.AmbientIntensity", i);
         PointLightsLocation[i].AmbientIntensity = GetUniformLocation(Name);
 
-        snprintf(Name, sizeof(Name), "gPointLights[%d].LocalPos", i);
-        PointLightsLocation[i].Position = GetUniformLocation(Name);
-
         snprintf(Name, sizeof(Name), "gPointLights[%d].Base.DiffuseIntensity", i);
         PointLightsLocation[i].DiffuseIntensity = GetUniformLocation(Name);
+
+        snprintf(Name, sizeof(Name), "gPointLights[%d].LocalPos", i);
+        PointLightsLocation[i].LocalPos = GetUniformLocation(Name);
+
+        snprintf(Name, sizeof(Name), "gPointLights[%d].WorldPos", i);
+        PointLightsLocation[i].WorldPos = GetUniformLocation(Name);
 
         snprintf(Name, sizeof(Name), "gPointLights[%d].Atten.Constant", i);
         PointLightsLocation[i].Atten.Constant = GetUniformLocation(Name);
@@ -97,8 +219,9 @@ bool LightingTechnique::Init()
 
         if (PointLightsLocation[i].Color == INVALID_UNIFORM_LOCATION ||
             PointLightsLocation[i].AmbientIntensity == INVALID_UNIFORM_LOCATION ||
-            PointLightsLocation[i].Position == INVALID_UNIFORM_LOCATION ||
             PointLightsLocation[i].DiffuseIntensity == INVALID_UNIFORM_LOCATION ||
+            PointLightsLocation[i].LocalPos == INVALID_UNIFORM_LOCATION ||
+            PointLightsLocation[i].WorldPos == INVALID_UNIFORM_LOCATION ||
             PointLightsLocation[i].Atten.Constant == INVALID_UNIFORM_LOCATION ||
             PointLightsLocation[i].Atten.Linear == INVALID_UNIFORM_LOCATION ||
             PointLightsLocation[i].Atten.Exp == INVALID_UNIFORM_LOCATION)
@@ -117,6 +240,9 @@ bool LightingTechnique::Init()
         snprintf(Name, sizeof(Name), "gSpotLights[%d].Base.Base.AmbientIntensity", i);
         SpotLightsLocation[i].AmbientIntensity = GetUniformLocation(Name);
 
+        snprintf(Name, sizeof(Name), "gSpotLights[%d].Base.Base.DiffuseIntensity", i);
+        SpotLightsLocation[i].DiffuseIntensity = GetUniformLocation(Name);
+
         snprintf(Name, sizeof(Name), "gSpotLights[%d].Base.LocalPos", i);
         SpotLightsLocation[i].Position = GetUniformLocation(Name);
 
@@ -125,9 +251,6 @@ bool LightingTechnique::Init()
 
         snprintf(Name, sizeof(Name), "gSpotLights[%d].Cutoff", i);
         SpotLightsLocation[i].Cutoff = GetUniformLocation(Name);
-
-        snprintf(Name, sizeof(Name), "gSpotLights[%d].Base.Base.DiffuseIntensity", i);
-        SpotLightsLocation[i].DiffuseIntensity = GetUniformLocation(Name);
 
         snprintf(Name, sizeof(Name), "gSpotLights[%d].Base.Atten.Constant", i);
         SpotLightsLocation[i].Atten.Constant = GetUniformLocation(Name);
@@ -140,25 +263,16 @@ bool LightingTechnique::Init()
 
         if (SpotLightsLocation[i].Color == INVALID_UNIFORM_LOCATION ||
             SpotLightsLocation[i].AmbientIntensity == INVALID_UNIFORM_LOCATION ||
+            SpotLightsLocation[i].DiffuseIntensity == INVALID_UNIFORM_LOCATION ||
             SpotLightsLocation[i].Position == INVALID_UNIFORM_LOCATION ||
             SpotLightsLocation[i].Direction == INVALID_UNIFORM_LOCATION ||
             SpotLightsLocation[i].Cutoff == INVALID_UNIFORM_LOCATION ||
-            SpotLightsLocation[i].DiffuseIntensity == INVALID_UNIFORM_LOCATION ||
             SpotLightsLocation[i].Atten.Constant == INVALID_UNIFORM_LOCATION ||
             SpotLightsLocation[i].Atten.Linear == INVALID_UNIFORM_LOCATION ||
             SpotLightsLocation[i].Atten.Exp == INVALID_UNIFORM_LOCATION)
         {
-
             return false;
         }
-    }
-
-    for (u_int i = 0; i < std::size(m_boneLocation); i++)
-    {
-        char Name[128];
-        memset(Name, 0, sizeof(Name));
-        snprintf(Name, sizeof(Name), "gBones[%d]", i);
-        m_boneLocation[i] = GetUniformLocation(Name);
     }
 
     return true;
@@ -169,9 +283,57 @@ void LightingTechnique::SetWVP(const glm::mat4 &WVP)
     glUniformMatrix4fv(WVPLoc, 1, GL_FALSE, glm::value_ptr(WVP));
 }
 
+void LightingTechnique::SetWorldMatrix(const glm::mat4 &World)
+{
+    glUniformMatrix4fv(WorldMatrixLoc, 1, GL_FALSE, glm::value_ptr(World));
+}
+
+void LightingTechnique::SetViewportMatrix(const glm::mat4 &ViewportMatrix)
+{
+    glUniformMatrix4fv(ViewportMatrixLoc, 1, GL_FALSE, glm::value_ptr(ViewportMatrix));
+}
+
+void LightingTechnique::SetLightWVP(const glm::mat4 &LightWVP)
+{
+    glUniformMatrix4fv(LightWVPLoc, 1, GL_FALSE, glm::value_ptr(LightWVP));
+}
+
 void LightingTechnique::SetTextureUnit(u_int TextureUnit)
 {
     glUniform1i(samplerLoc, TextureUnit);
+}
+
+void LightingTechnique::SetShadowMapSize(u_int Width, u_int Height)
+{
+    glUniform1i(shadowMapWidthLoc, Width);
+    glUniform1i(shadowMapHeightLoc, Height);
+}
+
+void LightingTechnique::SetShadowMapFilterSize(u_int Size)
+{
+    glUniform1i(shadowMapFilterSizeLoc, Size);
+}
+
+void LightingTechnique::SetShadowMapTextureUnit(u_int TextureUnit)
+{
+    glUniform1i(shadowMapLoc, TextureUnit);
+}
+
+void LightingTechnique::SetShadowCubeMapTextureUnit(u_int TextureUnit)
+{
+    glUniform1i(shadowCubeMapLoc, TextureUnit);
+}
+
+void LightingTechnique::SetShadowMapOffsetTextureUnit(u_int TextureUnit)
+{
+    glUniform1i(shadowMapOffsetTextureLoc, TextureUnit);
+}
+
+void LightingTechnique::SetShadowMapOffsetTextureParams(float TextureSize, float FilterSize, float Radius)
+{
+    glUniform1f(shadowMapOffsetTextureSizeLoc, TextureSize);
+    glUniform1f(shadowMapOffsetFilterSizeLoc, FilterSize);
+    glUniform1f(shadowMapRandomRadiusLoc, Radius);
 }
 
 void LightingTechnique::SetSpecularExponentTextureUnit(u_int TextureUnit)
@@ -179,14 +341,23 @@ void LightingTechnique::SetSpecularExponentTextureUnit(u_int TextureUnit)
     glUniform1i(samplerSpecularExponentLoc, TextureUnit);
 }
 
-void LightingTechnique::SetDirectionalLight(const DirectionalLight &Light)
+void LightingTechnique::SetDirectionalLight(const DirectionalLight &DirLight, bool WithDir)
 {
-    glUniform3f(dirLightLoc.Color, Light.Color.x, Light.Color.y, Light.Color.z);
-    glUniform1f(dirLightLoc.AmbientIntensity, Light.AmbientIntensity);
-    glUniform1f(dirLightLoc.DiffuseIntensity, Light.DiffuseIntensity);
+    glUniform3f(dirLightLoc.Color, DirLight.Color.x, DirLight.Color.y, DirLight.Color.z);
+    glUniform1f(dirLightLoc.AmbientIntensity, DirLight.AmbientIntensity);
+    glUniform1f(dirLightLoc.DiffuseIntensity, DirLight.DiffuseIntensity);
 
-    glm::vec3 LocalDir = Light.GetLocalDirection();
-    glUniform3f(dirLightLoc.Direction, LocalDir.x, LocalDir.y, LocalDir.z);
+    if (WithDir)
+    {
+        UpdateDirLightDirection(DirLight);
+    }
+}
+
+void LightingTechnique::UpdateDirLightDirection(const DirectionalLight &DirLight)
+{
+    glm::vec3 LocalDirection = glm::normalize(DirLight.GetLocalDirection());
+    glUniform3f(dirLightLoc.Direction, LocalDirection.x, LocalDirection.y, LocalDirection.z);
+    // glm::vec3 WorldDirection = glm::normalize(DirLight.WorldDirection);
 }
 
 void LightingTechnique::SetCameraLocalPos(const glm::vec3 &CameraLocalPos)
@@ -194,64 +365,281 @@ void LightingTechnique::SetCameraLocalPos(const glm::vec3 &CameraLocalPos)
     glUniform3f(CameraLocalPosLoc, CameraLocalPos.x, CameraLocalPos.y, CameraLocalPos.z);
 }
 
-void LightingTechnique::SetMaterial(const Material &material)
+void LightingTechnique::SetCameraWorldPos(const glm::vec3 &CameraWorldPos)
 {
-    glUniform3f(materialLoc.AmbientColor,
-                material.AmbientColor.r, material.AmbientColor.g, material.AmbientColor.b);
-    glUniform3f(materialLoc.DiffuseColor,
-                material.DiffuseColor.r, material.DiffuseColor.g, material.DiffuseColor.b);
-    glUniform3f(materialLoc.SpecularColor,
-                material.SpecularColor.r, material.SpecularColor.g, material.SpecularColor.b);
+    glUniform3f(CameraWorldPosLoc, CameraWorldPos.x, CameraWorldPos.y, CameraWorldPos.z);
 }
 
-void LightingTechnique::SetPointLights(u_int NumLights, const PointLight *pLights)
+void LightingTechnique::SetMaterial(const Material &material)
 {
-    glUniform1i(NumPointLightsLocation, NumLights);
+    glUniform3f(materialLoc.AmbientColor, material.AmbientColor.r, material.AmbientColor.g, material.AmbientColor.b);
+    glUniform3f(materialLoc.DiffuseColor, material.DiffuseColor.r, material.DiffuseColor.g, material.DiffuseColor.b);
+    glUniform3f(materialLoc.SpecularColor, material.SpecularColor.r, material.SpecularColor.g, material.SpecularColor.b);
+}
+
+void LightingTechnique::SetPointLights(u_int NumLights, const PointLight *pLights, bool WithPos)
+{
+    glUniform1i(NumPointLightsLoc, NumLights);
 
     for (u_int i = 0; i < NumLights; i++)
     {
         glUniform3f(PointLightsLocation[i].Color, pLights[i].Color.x, pLights[i].Color.y, pLights[i].Color.z);
         glUniform1f(PointLightsLocation[i].AmbientIntensity, pLights[i].AmbientIntensity);
         glUniform1f(PointLightsLocation[i].DiffuseIntensity, pLights[i].DiffuseIntensity);
-        const glm::vec3 &LocalPos = pLights[i].GetLocalPosition();
-        glUniform3f(PointLightsLocation[i].Position, LocalPos.x, LocalPos.y, LocalPos.z);
         glUniform1f(PointLightsLocation[i].Atten.Constant, pLights[i].Attenuation.Constant);
         glUniform1f(PointLightsLocation[i].Atten.Linear, pLights[i].Attenuation.Linear);
         glUniform1f(PointLightsLocation[i].Atten.Exp, pLights[i].Attenuation.Exp);
     }
+
+    if (WithPos)
+    {
+        UpdatePointLightsPos(NumLights, pLights);
+    }
 }
 
-void LightingTechnique::SetSpotLights(u_int NumLights, const SpotLight *pLights)
+void LightingTechnique::UpdatePointLightsPos(u_int NumLights, const PointLight *pLights)
 {
-    glUniform1i(NumSpotLightsLocation, NumLights);
-
-    for (uint i = 0; i < NumLights; i++)
+    for (u_int i = 0; i < NumLights; i++)
     {
-        glUniform3f(SpotLightsLocation[i].Color,
-                    pLights[i].Color.x, pLights[i].Color.y, pLights[i].Color.z);
+        const glm::vec3 &LocalPos = pLights[i].GetLocalPosition();
+        glUniform3f(PointLightsLocation[i].LocalPos, LocalPos.x, LocalPos.y, LocalPos.z);
+
+        const glm::vec3 &WorldPos = pLights[i].WorldPosition;
+        glUniform3f(PointLightsLocation[i].WorldPos, WorldPos.x, WorldPos.y, WorldPos.z);
+    }
+}
+
+void LightingTechnique::SetSpotLights(u_int NumLights, const SpotLight *pLights, bool WithPosAndDir)
+{
+    glUniform1i(NumSpotLightsLoc, NumLights);
+
+    for (u_int i = 0; i < NumLights; i++)
+    {
+        glUniform3f(SpotLightsLocation[i].Color, pLights[i].Color.x, pLights[i].Color.y, pLights[i].Color.z);
         glUniform1f(SpotLightsLocation[i].AmbientIntensity, pLights[i].AmbientIntensity);
         glUniform1f(SpotLightsLocation[i].DiffuseIntensity, pLights[i].DiffuseIntensity);
+        glUniform1f(SpotLightsLocation[i].Cutoff, cosf(glm::radians(pLights[i].Cutoff)));
+        glUniform1f(SpotLightsLocation[i].Atten.Constant, pLights[i].Attenuation.Constant);
+        glUniform1f(SpotLightsLocation[i].Atten.Linear, pLights[i].Attenuation.Linear);
+        glUniform1f(SpotLightsLocation[i].Atten.Exp, pLights[i].Attenuation.Exp);
+    }
 
+    if (WithPosAndDir)
+    {
+        UpdateSpotLightsPosAndDir(NumLights, pLights);
+    }
+}
+
+void LightingTechnique::UpdateSpotLightsPosAndDir(u_int NumLights, const SpotLight *pLights)
+{
+    for (u_int i = 0; i < NumLights; i++)
+    {
         const glm::vec3 &LocalPos = pLights[i].GetLocalPosition();
         glUniform3f(SpotLightsLocation[i].Position, LocalPos.x, LocalPos.y, LocalPos.z);
 
         glm::vec3 Direction = glm::normalize(pLights[i].GetLocalDirection());
         glUniform3f(SpotLightsLocation[i].Direction, Direction.x, Direction.y, Direction.z);
-
-        glUniform1f(SpotLightsLocation[i].Cutoff, cosf(glm::radians(pLights[i].Cutoff)));
-
-        glUniform1f(SpotLightsLocation[i].Atten.Constant, pLights[i].Attenuation.Constant);
-        glUniform1f(SpotLightsLocation[i].Atten.Linear, pLights[i].Attenuation.Linear);
-        glUniform1f(SpotLightsLocation[i].Atten.Exp, pLights[i].Attenuation.Exp);
     }
 }
 
-void LightingTechnique::SetBoneTransform(uint Index, const glm::mat4 &Transform)
+void LightingTechnique::SetColorMod(const glm::vec4 &Color)
 {
-    if (Index >= MAX_BONES)
+    glUniform4f(ColorModLoc, Color.x, Color.y, Color.z, Color.w);
+}
+
+void LightingTechnique::SetColorAdd(const glm::vec4 &Color)
+{
+    glUniform4f(ColorAddLoc, Color.x, Color.y, Color.z, Color.w);
+}
+
+void LightingTechnique::ControlRimLight(bool IsEnabled)
+{
+    if (IsEnabled)
     {
-        return;
+        glUniform1i(EnableRimLightLoc, 1);
     }
-    
-    glUniformMatrix4fv(m_boneLocation[Index], 1, GL_FALSE, glm::value_ptr(Transform));
+    else
+    {
+        glUniform1i(EnableRimLightLoc, 0);
+    }
+}
+
+void LightingTechnique::ControlCellShading(bool IsEnabled)
+{
+    if (IsEnabled)
+    {
+        glUniform1i(EnableCellShadingLoc, 1);
+    }
+    else
+    {
+        glUniform1i(EnableCellShadingLoc, 0);
+    }
+}
+
+void LightingTechnique::ControlSpecularExponent(bool IsEnabled)
+{
+    if (IsEnabled)
+    {
+        glUniform1i(EnableSpecularExponentLoc, 1);
+    }
+    else
+    {
+        glUniform1i(EnableSpecularExponentLoc, 0);
+    }
+}
+
+void LightingTechnique::SetLinearFog(float FogStart, float FogEnd)
+{
+    if (FogStart < 0.0f)
+    {
+        printf("Fog start must be positive: %f\n", FogStart);
+        exit(1);
+    }
+
+    if (FogEnd < 0.0f)
+    {
+        printf("Fog end must be positive: %f\n", FogEnd);
+    }
+
+    if (FogStart >= FogEnd)
+    {
+        printf("FogStart %f must be smaller than FogEnd %f\n", FogStart, FogEnd);
+        exit(1);
+    }
+
+    glUniform1f(LayeredFogTopLoc, -1.0f);
+    glUniform1f(FogTimeLoc, -1.0f);
+
+    glUniform1f(FogStartLoc, FogStart);
+    glUniform1f(FogEndLoc, FogEnd);
+}
+
+void LightingTechnique::SetExpFog(float FogEnd, float FogDensity)
+{
+    SetExpFogCommon(FogEnd, FogDensity);
+    glUniform1i(ExpSquaredFogEnabledLoc, 0);
+}
+
+void LightingTechnique::SetExpSquaredFog(float FogEnd, float FogDensity)
+{
+    SetExpFogCommon(FogEnd, FogDensity);
+    glUniform1i(ExpSquaredFogEnabledLoc, 1);
+}
+
+void LightingTechnique::SetExpFogCommon(float FogEnd, float FogDensity)
+{
+    if (FogEnd < 0.0f)
+    {
+        printf("Fog end must be positive: %f\n", FogEnd);
+        exit(1);
+    }
+
+    if (FogDensity < 0.0f)
+    {
+        printf("Fog density must be positive: %f\n", FogDensity);
+        exit(1);
+    }
+
+    glUniform1f(FogStartLoc, -1.0f);
+    glUniform1f(LayeredFogTopLoc, -1.0f);
+    glUniform1f(FogTimeLoc, -1.0f);
+
+    glUniform1f(FogEndLoc, FogEnd);
+    glUniform1f(ExpFogDensityLoc, FogDensity);
+}
+
+void LightingTechnique::SetLayeredFog(float FogTop, float FogEnd)
+{
+    if (FogTop < 0.0f)
+    {
+        printf("Fog top must be positive: %f\n", FogTop);
+        exit(1);
+    }
+
+    if (FogEnd < 0.0f)
+    {
+        printf("Fog end must be positive: %f\n", FogEnd);
+        exit(1);
+    }
+
+    glUniform1f(FogStartLoc, -1.0f);
+    glUniform1f(FogTimeLoc, -1.0f);
+
+    glUniform1f(LayeredFogTopLoc, FogTop);
+    glUniform1f(FogEndLoc, FogEnd);
+}
+
+void LightingTechnique::SetFogColor(const glm::vec3 &FogColor)
+{
+    glUniform3f(FogColorLoc, FogColor.r, FogColor.g, FogColor.b);
+}
+
+void LightingTechnique::SetFogTime(float Time)
+{
+    glUniform1f(FogTimeLoc, Time);
+}
+
+void LightingTechnique::SetAnimatedFog(float FogEnd, float FogDensity)
+{
+    glUniform1f(FogStartLoc, -1.0f);
+    glUniform1f(LayeredFogTopLoc, -1.0f);
+
+    glUniform1f(FogEndLoc, FogEnd);
+    glUniform1f(ExpFogDensityLoc, FogDensity);
+}
+
+void LightingTechnique::SetPBR(bool IsPBR)
+{
+    glUniform1i(IsPBRLoc, IsPBR);
+}
+
+void LightingTechnique::SetClipPlane(const glm::vec3 &Normal, const glm::vec3 &PointOnPlane)
+{
+    float d = -glm::dot(Normal, PointOnPlane);
+    glUniform4f(ClipPlaneLoc, Normal.x, Normal.y, Normal.z, d);
+}
+
+void LightingTechnique::SetWireframeWidth(float Width)
+{
+    if (WireframeWidthLoc == INVALID_UNIFORM_LOCATION)
+    {
+        printf("Invalid call to SetWireframeWidth\n");
+        exit(1);
+    }
+
+    glUniform1f(WireframeWidthLoc, Width);
+}
+
+void LightingTechnique::SetWireframeColor(const glm::vec4 &Color)
+{
+    if (WireframeColorLoc == INVALID_UNIFORM_LOCATION)
+    {
+        printf("Invalid call to SetWireframeColor\n");
+        exit(1);
+    }
+
+    glUniform4f(WireframeColorLoc, Color.x, Color.y, Color.z, Color.w);
+}
+
+void LightingTechnique::SetAlbedoTextureUnit(u_int TextureUnit)
+{
+    glUniform1i(AlbedoLoc, TextureUnit);
+}
+
+void LightingTechnique::SetRoughnessTextureUnit(u_int TextureUnit)
+{
+    glUniform1i(RoughnessLoc, TextureUnit);
+}
+
+void LightingTechnique::SetMetallicTextureUnit(u_int TextureUnit)
+{
+    glUniform1i(MetallicLoc, TextureUnit);
+}
+
+void LightingTechnique::SetNormalTextureUnit(u_int TextureUnit)
+{
+    if (NormalMapLoc != INVALID_UNIFORM_LOCATION)
+    {
+        glUniform1i(NormalMapLoc, TextureUnit);
+    }
 }

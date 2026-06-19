@@ -28,6 +28,8 @@ public:
     bool LoadMesh(const std::string &Filename, int AssimpFlags = ASSIMP_LOAD_FLAGS);
 
     void Render();
+    void Render(IRenderCallbacks* pRenderCallbacks);
+    void Render(u_int DrawIndex, u_int PrimID);
     void Render(u_int NumInstances, const glm::mat4 *WVPMats, const glm::mat4 *WorldMats);
 
     const Material &GetMaterial();

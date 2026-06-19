@@ -122,7 +122,7 @@ void Camera::OnKeyboard(int key)
 
     case GLFW_KEY_A:
     {
-        glm::vec3 Left = glm::normalize(glm::cross(m_target, m_up));
+        glm::vec3 Left = glm::normalize(glm::cross(m_up, m_target));
         Left *= m_speed;
         m_pos += Left;
         CameraChangedPos = true;
@@ -131,7 +131,7 @@ void Camera::OnKeyboard(int key)
 
     case GLFW_KEY_D:
     {
-        glm::vec3 Right = glm::normalize(glm::cross(m_up, m_target));
+        glm::vec3 Right = glm::normalize(glm::cross(m_target, m_up));
         Right *= m_speed;
         m_pos += Right;
         CameraChangedPos = true;

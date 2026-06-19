@@ -1,8 +1,5 @@
 #include "../inc/app.h"
 
-#define WINDOW_WIDTH 1280
-#define WINDOW_HEIGHT 720
-
 static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
     (void)scancode;
@@ -84,7 +81,10 @@ void App::Run()
 
 void App::RenderSceneCB()
 {
-    m_pGameCamera->OnRender();
+    if (m_mobileCamera)
+    {
+        m_pGameCamera->OnRender();
+    }
 
     if (m_leftMouseButton.IsPressed)
     {
@@ -125,31 +125,85 @@ void App::RenderPhase()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    WorldTrans &worldTransform = pMesh->GetWorldTransform();
-    glm::mat4 View = m_pGameCamera->GetMatrix();
-    glm::mat4 Projection = m_pGameCamera->GetProjectionMat();
-
-    int clicked_object_id = -1;
     if (m_leftMouseButton.IsPressed)
     {
+        HandleMouseButtonPressed();
+    }
+    else
+    {
+        m_clicked_object_id = -1;
+    }
+
+    RenderObjects();
+}
+
+void App::HandleMouseButtonPressed()
+{
+    glm::mat4 View = m_pGameCamera->GetMatrix();
+
+    if (m_leftMouseButton.FirstTime)
+    {
         PickingTexture::PixelInfo Pixel = m_pickingTexture.ReadPixel(
-            m_leftMouseButton.x,
-            WINDOW_HEIGHT - m_leftMouseButton.y - 1);
+            m_leftMouseButton.x, WINDOW_HEIGHT - m_leftMouseButton.y - 1);
 
         if (Pixel.ObjectID != 0)
         {
-            clicked_object_id = Pixel.ObjectID - 1;
-            assert(clicked_object_id < std::size(m_worldPos));
-            m_simpleColorEffect.Enable();
-            worldTransform.SetPosition(m_worldPos[clicked_object_id]);
-            glm::mat4 World = worldTransform.GetMatrix();
-            glm::mat4 WVP = Projection * View * World;
-            m_simpleColorEffect.SetWVP(WVP);
-            pMesh->Render(Pixel.DrawID, Pixel.PrimID);
+            m_clicked_object_id = Pixel.ObjectID - 1;
+            assert(m_clicked_object_id < std::size(m_worldPos));
+            m_objViewSpacePos = View * glm::vec4(m_worldPos[m_clicked_object_id], 1.0f);
+            m_leftMouseButton.FirstTime = false;
+        }
+        else
+        {
+            m_clicked_object_id = -1;
+            return;
         }
     }
 
+    DragTheObject();
+}
+
+void App::DragTheObject()
+{
+    glm::mat4 Projection = m_pGameCamera->GetProjectionMat();
+    glm::mat4 ProjectionInv = glm::inverse(Projection);
+
+    float mouse_x = (float)m_leftMouseButton.x;
+    float mouse_y = (float)m_leftMouseButton.y;
+
+    float ndc_x = (2.0f * mouse_x) / WINDOW_WIDTH - 1.0f;
+    float ndc_y = 1.0f - (2.0f * mouse_y) / WINDOW_HEIGHT;
+
+    glm::vec4 ray_ndc_4d(ndc_x, ndc_y, 1.0f, 1.0f);
+    glm::vec4 ray_view_4d = ProjectionInv * ray_ndc_4d;
+
+    if (ray_view_4d.w != 0.0f)
+    {
+        ray_view_4d /= ray_view_4d.w;
+    }
+
+    if (ray_view_4d.z == 0.0f)
+    {
+        return;
+    }
+
+    float t = m_objViewSpacePos.z / ray_view_4d.z;
+    glm::vec4 view_space_intersect = ray_view_4d * t;
+    view_space_intersect.w = 1.0f;
+
+    glm::mat4 View = m_pGameCamera->GetMatrix();
+    glm::mat4 InvView = glm::inverse(View);
+    glm::vec4 point_world = InvView * view_space_intersect;
+    m_worldPos[m_clicked_object_id] = glm::vec3(point_world);
+}
+
+void App::RenderObjects()
+{
     m_lightingEffect.Enable();
+
+    WorldTrans &worldTransform = pMesh->GetWorldTransform();
+    glm::mat4 View = m_pGameCamera->GetMatrix();
+    glm::mat4 Projection = m_pGameCamera->GetProjectionMat();
 
     for (u_int i = 0; i < std::size(m_worldPos); i++)
     {
@@ -157,18 +211,19 @@ void App::RenderPhase()
         glm::mat4 World = worldTransform.GetMatrix();
         glm::mat4 WVP = Projection * View * World;
         m_lightingEffect.SetWVP(WVP);
+
         glm::vec3 CameraLocalPos3f = worldTransform.WorldPosToLocalPos(m_pGameCamera->GetPos());
         m_lightingEffect.SetCameraLocalPos(CameraLocalPos3f);
         m_directionalLight.CalcLocalDirection(worldTransform);
         m_lightingEffect.SetDirectionalLight(m_directionalLight);
 
-        if (i == clicked_object_id)
+        if (i == m_clicked_object_id)
         {
             m_lightingEffect.SetColorMod(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
         }
         else
         {
-            m_lightingEffect.SetColorMod(glm::vec4(1.0f));
+            m_lightingEffect.SetColorMod(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
         }
 
         pMesh->Render(NULL);
@@ -184,6 +239,13 @@ void App::KeyBoardCB(u_int key, int state)
         glfwDestroyWindow(window);
         glfwTerminate();
         exit(0);
+        break;
+
+    case GLFW_KEY_SPACE:
+        if (state == GLFW_PRESS)
+        {
+            m_mobileCamera = !m_mobileCamera;
+        }
         break;
 
     case GLFW_KEY_I:
@@ -209,7 +271,20 @@ void App::KeyBoardCB(u_int key, int state)
 
 void App::PassiveMouseCB(int x, int y)
 {
-    m_pGameCamera->OnMouse(x, y);
+    if (m_mobileCamera)
+    {
+        m_pGameCamera->OnMouse(x, y);
+    }
+    else
+    {
+        m_pGameCamera->UpdateMousePosSilent(x, y);
+    }
+
+    if (m_leftMouseButton.IsPressed)
+    {
+        m_leftMouseButton.x = x;
+        m_leftMouseButton.y = y;
+    }
 }
 
 void App::MouseCB(int button, int action, int x, int y)
@@ -217,9 +292,15 @@ void App::MouseCB(int button, int action, int x, int y)
     if (button == GLFW_MOUSE_BUTTON_LEFT)
     {
         m_leftMouseButton.IsPressed = (action == GLFW_PRESS);
-        m_leftMouseButton.x = x;
-        m_leftMouseButton.y = y;
+
+        if (!m_leftMouseButton.IsPressed)
+        {
+            m_leftMouseButton.FirstTime = true;
+        }
     }
+
+    m_leftMouseButton.x = x;
+    m_leftMouseButton.y = y;
 }
 
 void App::CreateWindow()
@@ -288,6 +369,5 @@ void App::InitMesh()
 
     WorldTrans &worldTransform = pMesh->GetWorldTransform();
     worldTransform.SetScale(0.1f);
-    worldTransform.SetRotation(0.0f, -90.0f, 0.0f);
+    worldTransform.SetRotation(0.0f, -glm::radians(90.0f), 0.0f);
 }
-

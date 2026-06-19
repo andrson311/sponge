@@ -367,33 +367,14 @@ void Mesh::Render(IRenderCallbacks *pRenderCallbacks)
         u_int MaterialIndex = m_Meshes[i].MaterialIndex;
         assert(MaterialIndex < m_Materials.size());
 
-        if (pRenderCallbacks)
-        {
-            pRenderCallbacks->DrawStartCB(i);
-            pRenderCallbacks->SetMaterial(m_Materials[MaterialIndex]);
-        }
-
         if (m_Materials[MaterialIndex].pTextures[TEX_TYPE_BASE])
         {
             m_Materials[MaterialIndex].pTextures[TEX_TYPE_BASE]->Bind(COLOR_TEXTURE_UNIT);
-        }
-        else if (pRenderCallbacks)
-        {
-            pRenderCallbacks->DisableDiffuseTexture();
         }
 
         if (m_Materials[MaterialIndex].pTextures[TEX_TYPE_SPECULAR])
         {
             m_Materials[MaterialIndex].pTextures[TEX_TYPE_SPECULAR]->Bind(SPECULAR_TEXTURE_UNIT);
-
-            if (pRenderCallbacks)
-            {
-                pRenderCallbacks->ControlSpecularExponent(true);
-            }
-        }
-        else if (pRenderCallbacks)
-        {
-            pRenderCallbacks->ControlSpecularExponent(false);
         }
 
         glDrawElementsBaseVertex(

@@ -3,8 +3,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "math.h"
+#include "camera_api.h"
 
-class Camera
+class Camera : public CameraAPI
 {
 public:
     Camera() {};
@@ -35,9 +36,9 @@ public:
 
     glm::mat4 GetMatrix() const;
 
-    const glm::vec3 &GetPos() { return m_pos; }
-    const glm::vec3 &GetTarget() { return m_target; }
-    const glm::vec3 &GetUp() { return m_up; }
+    const glm::vec3 GetPos() const { return m_pos; }
+    const glm::vec3 &GetTarget() const { return m_target; }
+    const glm::vec3 &GetUp() const { return m_up; }
 
     const glm::mat4 GetProjectionMat() const { return m_projection; }
     const PersProjInfo &GetPersProjInfo() const { return m_persProjInfo; }

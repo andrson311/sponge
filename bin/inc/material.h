@@ -5,7 +5,21 @@
 
 #define INVALID_MATERIAL 0xFFFFFFFF
 
-enum TEXTURE_TYPE {
+struct PBRMaterial
+{
+    float Roughness = 0.0f;
+    bool IsMetal = false;
+    glm::vec3 Color = glm::vec3(0.0f);
+    Texture* pAlbedo = NULL;
+    Texture* pRoughness = NULL;
+    Texture* pMetallic = NULL;
+    Texture* pNormalMap = NULL;
+    Texture* pAO = NULL;
+    Texture* pEmissive = NULL;
+};
+
+enum TEXTURE_TYPE
+{
     TEX_TYPE_BASE = 0,
     TEX_TYPE_SPECULAR = 1,
     TEX_TYPE_NORMAL = 2,
@@ -32,11 +46,18 @@ public:
     glm::vec4 MetallicRoughnessNormalOcclusion = glm::vec4(0.0f);
     glm::vec4 ClearCoatTransmissionThickness = glm::vec4(0.0f);
 
-    Texture* pTextures[TEX_TYPE_NUM] = { 0 };
+    PBRMaterial PBRmaterial;
+
+    Texture *pTextures[TEX_TYPE_NUM] = {0};
+
+    float m_transparencyFactor = 1.0f;
+    float m_alphaTest = 0.0f;
+    u_int32_t m_flags = 0;
 
     ~Material()
     {
-        for (Texture* pTex : pTextures) {
+        for (Texture *pTex : pTextures)
+        {
             delete pTex;
         }
     }

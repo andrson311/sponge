@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 #include "technique.h"
-#include "mesh.h"
+#include "basic_mesh.h"
 
 class BaseLight
 {
@@ -132,7 +132,7 @@ public:
     void SetFogTime(float Time);
 
     void SetPBR(bool IsPBR);
-    // void SetPBRMaterial(const PBRMaterial &Material);
+    void SetPBRMaterial(const PBRMaterial &Material);
 
     void SetClipPlane(const glm::vec3 &Normal, const glm::vec3 &PointOnPlane);
 

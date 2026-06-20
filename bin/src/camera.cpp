@@ -259,13 +259,13 @@ void Camera::OnRender()
             m_AngleV -= EDGE_STEP;
             ShouldUpdate = true;
         }
-        else if (m_OnLowerEdge)
+    }
+    else if (m_OnLowerEdge)
+    {
+        if (m_AngleV < 90.0f)
         {
-            if (m_AngleV < 90.0f)
-            {
-                m_AngleV += EDGE_STEP;
-                ShouldUpdate = true;
-            }
+            m_AngleV += EDGE_STEP;
+            ShouldUpdate = true;
         }
     }
 

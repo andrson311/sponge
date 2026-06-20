@@ -173,8 +173,7 @@ bool LightingTechnique::InitCommon()
         PBRMaterialLoc.IsMetal == INVALID_UNIFORM_LOCATION ||
         PBRMaterialLoc.Color == INVALID_UNIFORM_LOCATION ||
         PBRMaterialLoc.IsAlbedo == INVALID_UNIFORM_LOCATION ||
-        ClipPlaneLoc == INVALID_UNIFORM_LOCATION
-    )
+        ClipPlaneLoc == INVALID_UNIFORM_LOCATION)
     {
         return false;
     }
@@ -591,6 +590,21 @@ void LightingTechnique::SetAnimatedFog(float FogEnd, float FogDensity)
 void LightingTechnique::SetPBR(bool IsPBR)
 {
     glUniform1i(IsPBRLoc, IsPBR);
+}
+
+void LightingTechnique::SetPBRMaterial(const PBRMaterial &Material)
+{
+    glUniform1i(PBRMaterialLoc.IsMetal, Material.IsMetal);
+    if (Material.pAlbedo)
+    {
+        glUniform1i(PBRMaterialLoc.IsAlbedo, 1);
+    }
+    else
+    {
+        glUniform1i(PBRMaterialLoc.IsAlbedo, 0);
+        glUniform3f(PBRMaterialLoc.Color, Material.Color.r, Material.Color.g, Material.Color.b);
+        glUniform1f(PBRMaterialLoc.Roughness, Material.Roughness);
+    }
 }
 
 void LightingTechnique::SetClipPlane(const glm::vec3 &Normal, const glm::vec3 &PointOnPlane)

@@ -1,11 +1,10 @@
+#pragma once
+
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include "glfw.h"
 #include "camera.h"
-#include "lighting_technique.h"
-#include "simple_color_technique.h"
-#include "picking_texture.h"
-#include "picking_technique.h"
+#include "renderer.h"
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
@@ -19,11 +18,11 @@ public:
     void Init();
     void Run();
     void RenderSceneCB();
-    void PickingPhase();
-    void RenderPhase();
-    void HandleMouseButtonPressed();
-    void DragTheObject();
-    void RenderObjects();
+    // void PickingPhase();
+    // void RenderPhase();
+    // void HandleMouseButtonPressed();
+    // void DragTheObject();
+    // void RenderObjects();
 
     void KeyBoardCB(u_int key, int state);
     void PassiveMouseCB(int x, int y);
@@ -33,18 +32,20 @@ private:
     void CreateWindow();
     void InitCallbacks();
     void InitCamera();
-    void InitShaders();
+    void InitRenderer();
     void InitMesh();
     
     GLFWwindow *window = NULL;
-    LightingTechnique m_lightingEffect;
-    PickingTechnique m_pickingEffect;
-    SimpleColorTechnique m_simpleColorEffect;
     Camera *m_pGameCamera = NULL;
-    bool m_mobileCamera = false;
+    PhongRenderer m_phongRenderer;
+    BasicMesh *m_pMesh1 = NULL;
+    BasicMesh *m_pTerrain = NULL;
+    PersProjInfo m_persProjInfo;
+    PointLight m_pointLights[LightingTechnique::MAX_POINT_LIGHTS];
     DirectionalLight m_directionalLight;
-    Mesh *pMesh = NULL;
-    PickingTexture m_pickingTexture;
+    bool m_isRimLightEnabled = false;
+    bool m_isCellShadingEnabled = false;
+    bool m_mobileCamera = false;
 
     struct
     {

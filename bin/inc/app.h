@@ -3,11 +3,21 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include "glfw.h"
+#include "util.h"
 #include "camera.h"
 #include "renderer.h"
 
+#include "lighting_technique.h"
+#include "basic_mesh.h"
+#include "world_transform.h"
+#include "framebuffer.h"
+#include "shadow_mapping_technique.h"
+
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
+
+#define SHADOW_MAP_WIDTH 2048
+#define SHADOW_MAP_HEIGHT 2048
 
 class App
 {
@@ -23,6 +33,8 @@ public:
     // void HandleMouseButtonPressed();
     // void DragTheObject();
     // void RenderObjects();
+    void ShadowMapPass();
+    void LightingPass();
 
     void KeyBoardCB(u_int key, int state);
     void PassiveMouseCB(int x, int y);
@@ -30,35 +42,25 @@ public:
 
 private:
     void CreateWindow();
+    void CreateShadowMap();
     void InitCallbacks();
     void InitCamera();
-    void InitRenderer();
+    // void InitRenderer();
+    void InitShaders();
     void InitMesh();
     
     GLFWwindow *window = NULL;
     Camera *m_pGameCamera = NULL;
-    PhongRenderer m_phongRenderer;
+    // PhongRenderer m_phongRenderer;
+    LightingTechnique m_lightingTech;
+    ShadowMappingTechnique m_shadowMapTech;
     BasicMesh *m_pMesh1 = NULL;
     BasicMesh *m_pTerrain = NULL;
     PersProjInfo m_persProjInfo;
-    PointLight m_pointLights[LightingTechnique::MAX_POINT_LIGHTS];
-    DirectionalLight m_directionalLight;
-    bool m_isRimLightEnabled = false;
-    bool m_isCellShadingEnabled = false;
-    bool m_mobileCamera = false;
-
-    struct
-    {
-        bool IsPressed = false;
-        bool FirstTime = true;
-        int x;
-        int y;
-    } m_leftMouseButton;
-
-    glm::vec3 m_worldPos[3];
-
-    glm::vec4 m_objViewSpacePos;
-    glm::vec3 m_intersectionPoint;
-    glm::vec3 m_translation;
-    int m_clicked_object_id = -1;
+    glm::mat4 m_lightPersProjMatrix;
+    SpotLight m_spotLight;
+    Framebuffer m_shadowMapFBO;
+    glm::vec3 m_cameraPos;
+    glm::vec3 m_cameraTarget;
+    bool m_cameraOnLight = false;
 };

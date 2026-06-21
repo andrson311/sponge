@@ -37,22 +37,20 @@ static void MouseButtonCallback(GLFWwindow *window, int Button, int Action, int 
 
 App::App()
 {
-    m_directionalLight.Color = glm::vec3(1.0f);
-    m_directionalLight.AmbientIntensity = 0.1f;
-    m_directionalLight.DiffuseIntensity = 1.0f;
-    m_directionalLight.WorldDirection = glm::vec3(1.0f, -1.0f, 0.0f);
+    m_spotLight.WorldPosition = glm::vec3(-20.0f, 20.0, 0.0f);
+    m_spotLight.WorldDirection = glm::vec3(1.0f, -1.0f, 0.0f);
+    m_spotLight.DiffuseIntensity = 0.9f;
+    m_spotLight.AmbientIntensity = 0.2f;
+    m_spotLight.Color = glm::vec3(1.0f);
+    m_spotLight.Attenuation.Linear = 0.0f;
+    m_spotLight.Attenuation.Exp = 0.0f;
+    m_spotLight.Cutoff = 30.0f;
 
-    m_pointLights[0].WorldPosition = glm::vec3(20.0f, 0.0f, 0.0f);
-    m_pointLights[0].DiffuseIntensity = 1.0f;
-    m_pointLights[0].Color = glm::vec3(1.0f);
-    m_pointLights[0].Attenuation.Linear = 0.1f;
-    m_pointLights[0].Attenuation.Exp = 0.0f;
-
-    m_pointLights[1].WorldPosition = glm::vec3(10.0f, 0.0f, 0.0f);
-    m_pointLights[1].DiffuseIntensity = 0.25f;
-    m_pointLights[1].Color = glm::vec3(1.0f);
-    m_pointLights[1].Attenuation.Linear = 0.0f;
-    m_pointLights[1].Attenuation.Exp = 0.2f;
+    float FOV = 45.0f;
+    float zNear = 1.0f;
+    float zFar = 50.0f;
+    float ar = (float)SHADOW_MAP_WIDTH / (float)SHADOW_MAP_HEIGHT;
+    m_lightPersProjMatrix = glm::perspective(glm::radians(FOV), ar, zNear, zFar);
 }
 
 App::~App()
@@ -71,10 +69,11 @@ App::~App()
 void App::Init()
 {
     CreateWindow();
+    CreateShadowMap();
     InitCallbacks();
     InitCamera();
     InitMesh();
-    InitRenderer();
+    InitShaders();
 }
 
 void App::Run()
@@ -89,176 +88,99 @@ void App::Run()
 
 void App::RenderSceneCB()
 {
+    ShadowMapPass();
+    LightingPass();
+}
+
+void App::ShadowMapPass()
+{
+    m_shadowMapFBO.BindForWriting();
+    glClear(GL_DEPTH_BUFFER_BIT);
+    m_shadowMapTech.Enable();
+
+    glm::mat4 World = m_pMesh1->GetWorldMatrix();
+    glm::vec3 Up(0.0f, 1.0f, 0.0f);
+    glm::mat4 LightView = glm::lookAt(
+        m_spotLight.WorldPosition,
+        m_spotLight.WorldPosition + m_spotLight.WorldDirection,
+        Up);
+
+    glm::mat4 WVP = m_lightPersProjMatrix * LightView * World;
+    m_shadowMapTech.SetWVP(WVP);
+
+    m_pMesh1->Render();
+}
+
+void App::LightingPass()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // if (m_mobileCamera)
-    // {
-    // }
+    m_lightingTech.Enable();
+    m_shadowMapFBO.BindDepthForReading(SHADOW_TEXTURE_UNIT);
     m_pGameCamera->OnRender();
 
     static float foo = 0.0f;
     foo += 0.002f;
 
-    m_directionalLight.WorldDirection = glm::vec3(sinf(foo), -0.5f, cosf(foo));
-    m_phongRenderer.UpdateDirLightDir(m_directionalLight.WorldDirection);
-    m_phongRenderer.ControlRimLight(m_isRimLightEnabled);
-    m_phongRenderer.ControlCellShading(m_isCellShadingEnabled);
-    m_phongRenderer.Render(m_pMesh1);
+    m_spotLight.WorldPosition = glm::vec3(-sinf(foo) * 15.0f, 8.0f, -cosf(foo) * 15.0f);
+    m_spotLight.WorldDirection = m_pMesh1->GetPosition() - m_spotLight.WorldPosition;
 
-    m_phongRenderer.ControlRimLight(false);
-    m_phongRenderer.ControlCellShading(false);
-    m_phongRenderer.Render(m_pTerrain);
+    if (m_cameraOnLight)
+    {
+        m_pGameCamera->SetPosition(m_spotLight.WorldPosition);
+        m_pGameCamera->SetTarget(m_spotLight.WorldDirection);
+    }
 
-    // if (m_leftMouseButton.IsPressed)
-    // {
-    //     PickingPhase();
-    // }
+    // render the main object
 
-    // RenderPhase();
+    glm::mat4 World = m_pMesh1->GetWorldMatrix();
+    glm::mat4 CameraView = m_pGameCamera->GetMatrix();
+    glm::mat4 CameraProjection = m_pGameCamera->GetProjectionMat();
+    glm::mat4 WVP = CameraProjection * CameraView * World;
+    m_lightingTech.SetWVP(WVP);
+
+    glm::vec3 Up(0.0f, 1.0f, 0.0f);
+    glm::mat4 LightView = glm::lookAt(
+        m_spotLight.WorldPosition,
+        m_spotLight.WorldPosition + m_spotLight.WorldDirection,
+        Up);
+    glm::mat4 LightWVP = m_lightPersProjMatrix * LightView * World;
+    m_lightingTech.SetLightWVP(LightWVP);
+
+    glm::vec3 CameraLocalPos3f = m_pMesh1->GetWorldTransform().WorldPosToLocalPos(m_pGameCamera->GetPos());
+    m_lightingTech.SetCameraLocalPos(CameraLocalPos3f);
+
+    m_spotLight.CalcLocalDirectionAndPosition(m_pMesh1->GetWorldTransform());
+    m_lightingTech.SetSpotLights(1, &m_spotLight);
+    m_lightingTech.SetMaterial(m_pMesh1->GetMaterial());
+    m_pMesh1->Render();
+
+    // render the terrain
+    World = m_pTerrain->GetWorldMatrix();
+    WVP = CameraProjection * CameraView * World;
+    m_lightingTech.SetWVP(WVP);
+
+    LightWVP = m_lightPersProjMatrix * LightView * World;
+    m_lightingTech.SetLightWVP(LightWVP);
+
+    m_spotLight.CalcLocalDirectionAndPosition(m_pTerrain->GetWorldTransform());
+    m_lightingTech.SetSpotLights(1, &m_spotLight);
+    m_lightingTech.SetMaterial(m_pTerrain->GetMaterial());
+
+    CameraLocalPos3f = m_pTerrain->GetWorldTransform().WorldPosToLocalPos(m_pGameCamera->GetPos());
+    m_lightingTech.SetCameraLocalPos(CameraLocalPos3f);
+
+    m_pTerrain->Render();
 }
-
-// void App::PickingPhase()
-// {
-//     m_pickingTexture.EnableWriting();
-
-//     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-//     m_pickingEffect.Enable();
-
-//     WorldTrans &worldTransform = pMesh->GetWorldTransform();
-//     glm::mat4 View = m_pGameCamera->GetMatrix();
-//     glm::mat4 Projection = m_pGameCamera->GetProjectionMat();
-
-//     for (u_int i = 0; i < (int)std::size(m_worldPos); i++)
-//     {
-//         worldTransform.SetPosition(m_worldPos[i]);
-
-//         // Background is zero, the real objects start at 1
-//         m_pickingEffect.SetObjectIndex(i + 1);
-//         glm::mat4 World = worldTransform.GetMatrix();
-//         glm::mat4 WVP = Projection * View * World;
-//         m_pickingEffect.SetWVP(WVP);
-//         pMesh->Render(&m_pickingEffect);
-//     }
-
-//     m_pickingTexture.DisableWriting();
-// }
-
-// void App::RenderPhase()
-// {
-//     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-//     if (m_leftMouseButton.IsPressed)
-//     {
-//         HandleMouseButtonPressed();
-//     }
-//     else
-//     {
-//         m_clicked_object_id = -1;
-//     }
-
-//     RenderObjects();
-// }
-
-// void App::HandleMouseButtonPressed()
-// {
-//     glm::mat4 View = m_pGameCamera->GetMatrix();
-
-//     if (m_leftMouseButton.FirstTime)
-//     {
-//         PickingTexture::PixelInfo Pixel = m_pickingTexture.ReadPixel(
-//             m_leftMouseButton.x, WINDOW_HEIGHT - m_leftMouseButton.y - 1);
-
-//         if (Pixel.ObjectID != 0)
-//         {
-//             m_clicked_object_id = Pixel.ObjectID - 1;
-//             assert(m_clicked_object_id < std::size(m_worldPos));
-//             m_objViewSpacePos = View * glm::vec4(m_worldPos[m_clicked_object_id], 1.0f);
-//             m_leftMouseButton.FirstTime = false;
-//         }
-//         else
-//         {
-//             m_clicked_object_id = -1;
-//             return;
-//         }
-//     }
-
-//     DragTheObject();
-// }
-
-// void App::DragTheObject()
-// {
-//     glm::mat4 Projection = m_pGameCamera->GetProjectionMat();
-//     glm::mat4 ProjectionInv = glm::inverse(Projection);
-
-//     float mouse_x = (float)m_leftMouseButton.x;
-//     float mouse_y = (float)m_leftMouseButton.y;
-
-//     float ndc_x = (2.0f * mouse_x) / WINDOW_WIDTH - 1.0f;
-//     float ndc_y = 1.0f - (2.0f * mouse_y) / WINDOW_HEIGHT;
-
-//     glm::vec4 ray_ndc_4d(ndc_x, ndc_y, 1.0f, 1.0f);
-//     glm::vec4 ray_view_4d = ProjectionInv * ray_ndc_4d;
-
-//     if (ray_view_4d.w != 0.0f)
-//     {
-//         ray_view_4d /= ray_view_4d.w;
-//     }
-
-//     if (ray_view_4d.z == 0.0f)
-//     {
-//         return;
-//     }
-
-//     float t = m_objViewSpacePos.z / ray_view_4d.z;
-//     glm::vec4 view_space_intersect = ray_view_4d * t;
-//     view_space_intersect.w = 1.0f;
-
-//     glm::mat4 View = m_pGameCamera->GetMatrix();
-//     glm::mat4 InvView = glm::inverse(View);
-//     glm::vec4 point_world = InvView * view_space_intersect;
-//     m_worldPos[m_clicked_object_id] = glm::vec3(point_world);
-// }
-
-// void App::RenderObjects()
-// {
-//     m_lightingEffect.Enable();
-
-//     WorldTrans &worldTransform = pMesh->GetWorldTransform();
-//     glm::mat4 View = m_pGameCamera->GetMatrix();
-//     glm::mat4 Projection = m_pGameCamera->GetProjectionMat();
-
-//     for (u_int i = 0; i < std::size(m_worldPos); i++)
-//     {
-//         worldTransform.SetPosition(m_worldPos[i]);
-//         glm::mat4 World = worldTransform.GetMatrix();
-//         glm::mat4 WVP = Projection * View * World;
-//         m_lightingEffect.SetWVP(WVP);
-
-//         glm::vec3 CameraLocalPos3f = worldTransform.WorldPosToLocalPos(m_pGameCamera->GetPos());
-//         m_lightingEffect.SetCameraLocalPos(CameraLocalPos3f);
-//         m_directionalLight.CalcLocalDirection(worldTransform);
-//         m_lightingEffect.SetDirectionalLight(m_directionalLight);
-
-//         if (i == m_clicked_object_id)
-//         {
-//             m_lightingEffect.SetColorMod(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
-//         }
-//         else
-//         {
-//             m_lightingEffect.SetColorMod(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-//         }
-
-//         pMesh->Render(NULL);
-//     }
-// }
 
 #define ATTEN_STEP 0.01f
 #define ANGLE_STEP 1.0f
 
 void App::KeyBoardCB(u_int key, int state)
 {
-    if (state == GLFW_PRESS)
+    if (state == GLFW_PRESS || state == GLFW_REPEAT)
     {
         switch (key)
         {
@@ -269,43 +191,37 @@ void App::KeyBoardCB(u_int key, int state)
             exit(0);
             break;
 
-        case GLFW_KEY_SPACE:
-            if (state == GLFW_PRESS)
+        case GLFW_KEY_L:
+            m_cameraOnLight = !m_cameraOnLight;
+            if (!m_cameraOnLight)
             {
-                m_mobileCamera = !m_mobileCamera;
+                m_pGameCamera->SetPosition(m_cameraPos);
+                m_pGameCamera->SetTarget(m_cameraTarget);
             }
             break;
 
         case GLFW_KEY_I:
             // m_directionalLight.AmbientIntensity += 0.05f;
-            m_pointLights[0].Attenuation.Linear += ATTEN_STEP;
-            m_pointLights[1].Attenuation.Linear += ATTEN_STEP;
+            m_spotLight.Attenuation.Linear += ATTEN_STEP;
+            m_spotLight.Attenuation.Linear += ATTEN_STEP;
             break;
 
         case GLFW_KEY_K:
-            m_pointLights[0].Attenuation.Linear -= ATTEN_STEP;
-            m_pointLights[1].Attenuation.Linear -= ATTEN_STEP;
+            m_spotLight.Attenuation.Linear -= ATTEN_STEP;
+            m_spotLight.Attenuation.Linear -= ATTEN_STEP;
             // m_directionalLight.AmbientIntensity -= 0.05f;
             break;
 
         case GLFW_KEY_O:
-            m_pointLights[0].Attenuation.Exp += ATTEN_STEP;
-            m_pointLights[1].Attenuation.Exp += ATTEN_STEP;
+            m_spotLight.Attenuation.Exp += ATTEN_STEP;
+            m_spotLight.Attenuation.Exp += ATTEN_STEP;
             // m_directionalLight.DiffuseIntensity += 0.05f;
             break;
 
-        case GLFW_KEY_L:
-            m_pointLights[0].Attenuation.Exp -= ATTEN_STEP;
-            m_pointLights[1].Attenuation.Exp -= ATTEN_STEP;
+        case GLFW_KEY_P:
+            m_spotLight.Attenuation.Exp -= ATTEN_STEP;
+            m_spotLight.Attenuation.Exp -= ATTEN_STEP;
             // m_directionalLight.DiffuseIntensity -= 0.05f;
-            break;
-
-        case GLFW_KEY_C:
-            m_isCellShadingEnabled = !m_isCellShadingEnabled;
-            break;
-
-        case GLFW_KEY_R:
-            m_isRimLightEnabled = !m_isRimLightEnabled;
             break;
         }
     }
@@ -314,36 +230,11 @@ void App::KeyBoardCB(u_int key, int state)
 
 void App::PassiveMouseCB(int x, int y)
 {
-    // if (m_mobileCamera)
-    // {
     m_pGameCamera->OnMouse(x, y);
-    // }
-    // else
-    // {
-    //     m_pGameCamera->UpdateMousePosSilent(x, y);
-    // }
-
-    // if (m_leftMouseButton.IsPressed)
-    // {
-    //     m_leftMouseButton.x = x;
-    //     m_leftMouseButton.y = y;
-    // }
 }
 
 void App::MouseCB(int button, int action, int x, int y)
 {
-    // if (button == GLFW_MOUSE_BUTTON_LEFT)
-    // {
-    //     m_leftMouseButton.IsPressed = (action == GLFW_PRESS);
-
-    //     if (!m_leftMouseButton.IsPressed)
-    //     {
-    //         m_leftMouseButton.FirstTime = true;
-    //     }
-    // }
-
-    // m_leftMouseButton.x = x;
-    // m_leftMouseButton.y = y;
 }
 
 void App::CreateWindow()
@@ -352,6 +243,11 @@ void App::CreateWindow()
     window = InitGLFW(WINDOW_WIDTH, WINDOW_HEIGHT, is_full_screen, "Test window");
     glfwSetWindowUserPointer(window, this);
     glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
+}
+
+void App::CreateShadowMap()
+{
+    m_shadowMapFBO.Init(SHADOW_MAP_WIDTH, SHADOW_MAP_HEIGHT, 3, false, true, false);
 }
 
 void App::InitCallbacks()
@@ -380,19 +276,36 @@ void App::InitCamera()
     m_pGameCamera = new Camera(persProjInfo, Pos, Target, Up);
 }
 
-void App::InitRenderer()
+void App::InitShaders()
 {
-    m_phongRenderer.InitPhongRenderer();
-    m_phongRenderer.SetCamera(m_pGameCamera);
-    m_phongRenderer.SetDirLight(m_directionalLight);
+    if (!m_lightingTech.Init())
+    {
+        printf("Error initializing the lighting technique\n");
+        exit(1);
+    }
+
+    m_lightingTech.Enable();
+    m_lightingTech.SetTextureUnit(COLOR_TEXTURE_UNIT_INDEX);
+    m_lightingTech.SetShadowMapTextureUnit(SHADOW_TEXTURE_UNIT_INDEX);
+    //    m_lightingTech.SetSpecularExponentTextureUnit(SPECULAR_EXPONENT_UNIT_INDEX);
+
+    if (!m_shadowMapTech.Init())
+    {
+        printf("Error initializing the shadow mapping technique\n");
+        exit(1);
+    }
 }
 
 void App::InitMesh()
 {
     m_pMesh1 = new BasicMesh();
-    m_pMesh1->LoadMesh("assets/vanguard/Vanguard.dae");
-    m_pMesh1->SetPosition(0.0f, 0.0f, 10.0f);
-    m_pMesh1->SetRotation(glm::radians(-90.0f), 0.0f, 0.0f);
+    // m_pMesh1 = new SkinnedMesh();
+    // m_pMesh1->LoadMesh("assets/vanguard/Vanguard.dae");
+    // m_pMesh1->LoadMesh("assets/vanguard/Vanguard.dae");
+    // m_pMesh1->LoadMesh("assets/example/example1.glb");
+    // m_pMesh1->SetPosition(0.0f, 0.0f, 10.0f);
+    // m_pMesh1->SetRotation(glm::radians(-90.0f), 0.0f, 0.0f);
+    m_pMesh1->LoadMesh("assets/ordinary_house/ordinary_house.obj");
 
     m_pTerrain = new BasicMesh();
     m_pTerrain->LoadMesh("assets/box_terrain/box_terrain.obj");

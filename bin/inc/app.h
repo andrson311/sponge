@@ -41,6 +41,7 @@ public:
     void MouseCB(int button, int action, int x, int y);
 
 private:
+    void ProcessHeldKeys();
     void CreateWindow();
     void CreateShadowMap();
     void InitCallbacks();
@@ -57,10 +58,13 @@ private:
     BasicMesh *m_pMesh1 = NULL;
     BasicMesh *m_pTerrain = NULL;
     PersProjInfo m_persProjInfo;
-    glm::mat4 m_lightPersProjMatrix;
-    SpotLight m_spotLight;
+    glm::mat4 m_lightOrthoProjMatrix;
+    glm::mat4 m_cameraOrthoProjMatrix;
+    DirectionalLight m_dirLight;
     Framebuffer m_shadowMapFBO;
     glm::vec3 m_cameraPos;
     glm::vec3 m_cameraTarget;
     bool m_cameraOnLight = false;
+    glm::vec3 m_positions[3];
+    bool m_isOrthoCamera = false;
 };

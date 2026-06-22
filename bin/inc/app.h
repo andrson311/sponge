@@ -12,12 +12,22 @@
 #include "world_transform.h"
 #include "framebuffer.h"
 #include "shadow_mapping_technique.h"
+#include "shadow_cube_map_fbo.h"
+#include "shadow_mapping_technique_point_light.h"
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
 
-#define SHADOW_MAP_WIDTH 2048
-#define SHADOW_MAP_HEIGHT 2048
+#define SHADOW_MAP_SIZE 4096
+
+struct CameraDirection
+{
+    GLenum CubemapFace;
+    glm::vec3 Target;
+    glm::vec3 Up;
+};
+
+extern CameraDirection gCameraDirections[NUM_CUBE_MAP_FACES];
 
 class App
 {
@@ -49,22 +59,26 @@ private:
     // void InitRenderer();
     void InitShaders();
     void InitMesh();
-    
+
     GLFWwindow *window = NULL;
     Camera *m_pGameCamera = NULL;
     // PhongRenderer m_phongRenderer;
     LightingTechnique m_lightingTech;
-    ShadowMappingTechnique m_shadowMapTech;
+    ShadowMappingPointLightTechnique m_shadowMapTech;
     BasicMesh *m_pMesh1 = NULL;
+    BasicMesh *m_pMesh2 = NULL;
     BasicMesh *m_pTerrain = NULL;
     PersProjInfo m_persProjInfo;
-    glm::mat4 m_lightOrthoProjMatrix;
+    glm::mat4 m_lightPersProjMatrix;
     glm::mat4 m_cameraOrthoProjMatrix;
-    DirectionalLight m_dirLight;
-    Framebuffer m_shadowMapFBO;
+    // DirectionalLight m_dirLight;
+    PointLight m_pointLight;
+    // Framebuffer m_shadowMapFBO;
+    ShadowCubeMapFBO m_shadowCubeMapFBO;
     glm::vec3 m_cameraPos;
     glm::vec3 m_cameraTarget;
     bool m_cameraOnLight = false;
-    glm::vec3 m_positions[3];
+    glm::vec3 m_housePositions[4] = {};
+    glm::vec3 m_cylinderPositions[4] = {};
     bool m_isOrthoCamera = false;
 };

@@ -52,6 +52,7 @@
 #define HEIGHT_TEXTURE_UNIT_INDEX 14
 
 #define MAX_BONES (200)
+#define NUM_CUBE_MAP_FACES 6
 
 long long GetCurrentTimeMillis();
 bool ReadFile(const char *pFileName, std::string &outFile);

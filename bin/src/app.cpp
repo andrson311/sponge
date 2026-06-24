@@ -1,13 +1,12 @@
 #include "app.h"
 
 CameraDirection gCameraDirections[NUM_CUBE_MAP_FACES] = {
-    { GL_TEXTURE_CUBE_MAP_POSITIVE_X, glm::vec3( 1.0f,  0.0f,  0.0f), glm::vec3(0.0f,  1.0f,  0.0f) },
-    { GL_TEXTURE_CUBE_MAP_NEGATIVE_X, glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f,  1.0f,  0.0f) },
-    { GL_TEXTURE_CUBE_MAP_POSITIVE_Y, glm::vec3( 0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f) },
-    { GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, glm::vec3( 0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f) },
-    { GL_TEXTURE_CUBE_MAP_POSITIVE_Z, glm::vec3( 0.0f,  0.0f,  1.0f), glm::vec3(0.0f,  1.0f,  0.0f) },
-    { GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec3(0.0f,  1.0f,  0.0f) }
-};
+    {GL_TEXTURE_CUBE_MAP_POSITIVE_X, glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)},
+    {GL_TEXTURE_CUBE_MAP_NEGATIVE_X, glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)},
+    {GL_TEXTURE_CUBE_MAP_POSITIVE_Y, glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)},
+    {GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)},
+    {GL_TEXTURE_CUBE_MAP_POSITIVE_Z, glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 1.0f, 0.0f)},
+    {GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f)}};
 
 static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
@@ -46,32 +45,28 @@ static void MouseButtonCallback(GLFWwindow *window, int Button, int Action, int 
 
 App::App()
 {
-    m_pointLight.AmbientIntensity = 0.1f;
-    m_pointLight.DiffuseIntensity = 0.9f;
-    m_pointLight.Color = glm::vec3(1.0f);
-    m_pointLight.WorldPosition = glm::vec3(0.0f, 2.0f, 0.0f);
+    m_dirLight.AmbientIntensity = 0.5f;
+    m_dirLight.DiffuseIntensity = 0.9f;
+    m_dirLight.Color = glm::vec3(1.0f);
+    m_dirLight.WorldDirection = glm::vec3(1.0f, -0.5f, 0.0f);
 
-    float FOV = 90.0f;
-    float zNear = 0.1f;
-    float zFar = 20.0f;
+    OrthoProjInfo cameraOrthoProjInfo;
+    cameraOrthoProjInfo.l = -WINDOW_WIDTH / 250.0f;
+    cameraOrthoProjInfo.r = WINDOW_WIDTH / 250.0f;
+    cameraOrthoProjInfo.t = -WINDOW_HEIGHT / 250.0f;
+    cameraOrthoProjInfo.b = WINDOW_HEIGHT / 250.0f;
+    cameraOrthoProjInfo.n = 1.0f;
+    cameraOrthoProjInfo.f = 100.0f;
 
-    m_lightPersProjMatrix = glm::perspective(glm::radians(FOV), 1.0f, zNear, zFar);
     m_cameraOrthoProjMatrix = glm::ortho(
-        -WINDOW_WIDTH / 250.0f,
-        WINDOW_WIDTH / 250.0f,
-        -WINDOW_HEIGHT / 250.0f,
-        WINDOW_HEIGHT / 250.0f,
-        1.0f,
-        100.0f);
+        cameraOrthoProjInfo.l,
+        cameraOrthoProjInfo.r,
+        cameraOrthoProjInfo.b,
+        cameraOrthoProjInfo.t,
+        cameraOrthoProjInfo.n,
+        cameraOrthoProjInfo.f);
 
-    m_housePositions[0] = glm::vec3(0.0f, 0.0f, -8.0f); // near
-    m_cylinderPositions[0] = glm::vec3(0.0f, 0.0f, -4.0f);
-    m_housePositions[1] = glm::vec3(-8.0f, 0.0f, 0.0f); // left
-    m_cylinderPositions[1] = glm::vec3(-4.0f, 0.0f, 1.0f);
-    m_housePositions[2] = glm::vec3(8.0f, 0.0f, 0.0f); // right
-    m_cylinderPositions[2] = glm::vec3(4.0f, 0.0f, 1.0f);
-    m_housePositions[3] = glm::vec3(0.0f, 0.0f, 8.0f); // far
-    m_cylinderPositions[3] = glm::vec3(0.0f, 0.0f, 4.0f);
+    m_positions[0] = glm::vec3(0.0f, 0.0f, -15.0f);
 }
 
 App::~App()
@@ -90,11 +85,14 @@ App::~App()
 void App::Init()
 {
     CreateWindow();
-    CreateShadowMap();
+    // CreateShadowMap();
     InitCallbacks();
     InitCamera();
     InitMesh();
-    InitShaders();
+    // InitShaders();
+    InitRenderer();
+
+    m_startTime = GetCurrentTimeMillis();
 }
 
 void App::Run()
@@ -110,45 +108,78 @@ void App::Run()
 
 void App::RenderSceneCB()
 {
-    ShadowMapPass();
-    LightingPass();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    m_pGameCamera->OnRender();
+
+    long long CurrentTime = GetCurrentTimeMillis();
+    float RunningTime = (float)((double)CurrentTime - (double)m_startTime) / 1000.0f;
+
+    if (m_isAnimatedFog)
+    {
+        static float FogTime = 0.0f;
+        float scale = 0.0000000000035f;
+        FogTime += scale * ((float)random() / 10.0f) * RunningTime;
+        m_phongRenderer.UpdateAnimatedFogTime(FogTime);
+    }
+
+    m_phongRenderer.Render(m_pTerrain);
+
+    // static float foo = 0.001f;
+    // foo += 0.01f;
+
+    // if (foo >= glm::two_pi<float>())
+    // {
+    //     foo = 0.001f;
+    // }
+
+    // if (m_cameraOnLight)
+    // {
+    //     m_pGameCamera->SetPosition(m_dirLight.WorldDirection * 2.0f + glm::vec3(0.0f, 5.0f, 0.0f));
+    //     m_pGameCamera->SetTarget(glm::vec3(0.0f) - m_dirLight.WorldDirection);
+    // }
+
+    // m_dirLight.WorldDirection = glm::vec3(sinf(foo), -1.0f, cosf(foo));
+
+    // ShadowMapPass();
+    // LightingPass();
 }
 
 void App::ShadowMapPass()
 {
+    m_shadowMapFBO.BindForWriting();
+    glClear(GL_DEPTH_BUFFER_BIT);
     m_shadowMapTech.Enable();
-    m_shadowMapTech.SetLightWorldPos(m_pointLight.WorldPosition);
 
-    glClearColor(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX);
+    OrthoProjInfo LightOrthoProjInfo;
+    CalcTightLightProjection(
+        m_pGameCamera->GetMatrix(),
+        m_dirLight.WorldDirection,
+        m_pGameCamera->GetPersProjInfo(),
+        m_lightWorldPos,
+        LightOrthoProjInfo);
 
-    for (u_int i = 0; i < NUM_CUBE_MAP_FACES; i++)
+    glm::mat4 LightView;
+    glm::vec3 Up(0.0f, 1.0f, 0.0f);
+
+    m_lightOrthoProjMatrix = glm::ortho(
+        LightOrthoProjInfo.l,
+        LightOrthoProjInfo.r,
+        LightOrthoProjInfo.b,
+        LightOrthoProjInfo.t,
+        LightOrthoProjInfo.n,
+        LightOrthoProjInfo.f);
+
+    for (int i = 0; i < std::size(m_positions); i++)
     {
-        m_shadowCubeMapFBO.BindForWriting(gCameraDirections[i].CubemapFace);
-        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
-        glm::mat4 LightView = glm::lookAt(m_pointLight.WorldPosition,
-                                          m_pointLight.WorldPosition + gCameraDirections[i].Target,
-                                          gCameraDirections[i].Up);
-
-        for (int i = 0; i < std::size(m_housePositions); i++)
-        {
-            m_pMesh1->SetPosition(m_housePositions[i]);
-            glm::mat4 World = m_pMesh1->GetWorldMatrix();
-            glm::mat4 WVP = m_lightPersProjMatrix * LightView * World;
-            m_shadowMapTech.SetWVP(WVP);
-            m_shadowMapTech.SetWorld(World);
-            m_pMesh1->Render();
-        }
-
-        for (int i = 0; i < std::size(m_cylinderPositions); i++)
-        {
-            m_pMesh2->SetPosition(m_cylinderPositions[i]);
-            glm::mat4 World = m_pMesh2->GetWorldMatrix();
-            glm::mat4 WVP = m_lightPersProjMatrix * LightView * World;
-            m_shadowMapTech.SetWVP(WVP);
-            m_shadowMapTech.SetWorld(World);
-            m_pMesh2->Render();
-        }
+        m_pMesh1->SetPosition(m_positions[i]);
+        glm::mat4 World = m_pMesh1->GetWorldMatrix();
+        glm::mat4 LightView = glm::lookAt(
+            m_lightWorldPos,
+            m_lightWorldPos + m_dirLight.WorldDirection,
+            Up);
+        glm::mat4 WVP = m_lightOrthoProjMatrix * LightView * World;
+        m_shadowMapTech.SetWVP(WVP);
+        m_pMesh1->Render();
     }
 }
 
@@ -156,12 +187,10 @@ void App::LightingPass()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-
-    glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     m_lightingTech.Enable();
-    m_shadowCubeMapFBO.BindForReading(SHADOW_CUBE_MAP_TEXTURE_UNIT);
+    m_shadowMapFBO.BindDepthForReading(SHADOW_TEXTURE_UNIT);
     m_pGameCamera->OnRender();
 
     // render the main object
@@ -178,50 +207,48 @@ void App::LightingPass()
         CameraProjection = m_pGameCamera->GetProjectionMat();
     }
 
-    for (int i = 0; i < std::size(m_housePositions); i++)
+    glm::vec3 Up(0.0f, 1.0f, 0.0f);
+    glm::mat4 LightView = glm::lookAt(
+        m_lightWorldPos,
+        m_lightWorldPos + m_dirLight.WorldDirection,
+        Up);
+    m_lightingTech.SetMaterial(m_pMesh1->GetMaterial());
+
+    for (int i = 0; i < std::size(m_positions); i++)
     {
-        m_pMesh1->SetPosition(m_housePositions[i]);
+        m_pMesh1->SetPosition(m_positions[i]);
+
         glm::mat4 World = m_pMesh1->GetWorldMatrix();
         glm::mat4 WVP = CameraProjection * CameraView * World;
-        m_lightingTech.SetWorldMatrix(World);
         m_lightingTech.SetWVP(WVP);
+
+        glm::mat4 LightWVP = m_lightOrthoProjMatrix * LightView * World;
+        m_lightingTech.SetLightWVP(LightWVP);
 
         glm::vec3 CameraLocalPos3f = m_pMesh1->GetWorldTransform().WorldPosToLocalPos(m_pGameCamera->GetPos());
         m_lightingTech.SetCameraLocalPos(CameraLocalPos3f);
-        m_pointLight.CalcLocalPosition(m_pMesh1->GetWorldTransform());
-        m_lightingTech.SetPointLights(1, &m_pointLight);
-        m_pMesh1->Render(&m_lightingTech);
-    }
-
-    for (int i = 0; i < std::size(m_cylinderPositions); i++)
-    {
-        m_pMesh2->SetPosition(m_cylinderPositions[i]);
-        glm::mat4 World = m_pMesh2->GetWorldMatrix();
-        glm::mat4 WVP = CameraProjection * CameraView * World;
-        m_lightingTech.SetWorldMatrix(World);
-        m_lightingTech.SetWVP(WVP);
-
-        glm::vec3 CameraLocalPos3f = m_pMesh2->GetWorldTransform().WorldPosToLocalPos(m_pGameCamera->GetPos());
-        m_lightingTech.SetCameraLocalPos(CameraLocalPos3f);
-        m_pointLight.CalcLocalPosition(m_pMesh2->GetWorldTransform());
-        m_lightingTech.SetPointLights(1, &m_pointLight);
-        m_pMesh2->Render(&m_lightingTech);
+        m_dirLight.CalcLocalDirection(m_pMesh1->GetWorldTransform());
+        m_lightingTech.SetDirectionalLight(m_dirLight);
+        m_pMesh1->Render();
     }
 
     // render the terrain
 
     glm::mat4 World = m_pTerrain->GetWorldMatrix();
     glm::mat4 WVP = CameraProjection * CameraView * World;
-    m_lightingTech.SetWorldMatrix(World);
     m_lightingTech.SetWVP(WVP);
 
-    m_pointLight.CalcLocalPosition(m_pTerrain->GetWorldTransform());
-    m_lightingTech.SetPointLights(1, &m_pointLight);
+    glm::mat4 LightWVP = m_lightOrthoProjMatrix * LightView * World;
+    m_lightingTech.SetLightWVP(LightWVP);
+
+    m_dirLight.CalcLocalDirection(m_pTerrain->GetWorldTransform());
+    m_lightingTech.SetDirectionalLight(m_dirLight);
+    m_lightingTech.SetMaterial(m_pTerrain->GetMaterial());
 
     glm::vec3 CameraLocalPos3f = m_pTerrain->GetWorldTransform().WorldPosToLocalPos(m_pGameCamera->GetPos());
     m_lightingTech.SetCameraLocalPos(CameraLocalPos3f);
 
-    m_pTerrain->Render(&m_lightingTech);
+    m_pTerrain->Render();
 }
 
 #define ATTEN_STEP 0.01f
@@ -240,25 +267,40 @@ void App::KeyBoardCB(u_int key, int state)
             exit(0);
             break;
 
-        case GLFW_KEY_L:
-            m_cameraOnLight = !m_cameraOnLight;
-            if (!m_cameraOnLight)
-            {
-                m_pGameCamera->SetPosition(m_cameraPos);
-                m_pGameCamera->SetTarget(m_cameraTarget);
-            }
+        case GLFW_KEY_0:
+            printf("No fog\n");
+            m_isAnimatedFog = false;
+            m_phongRenderer.DisableFog();
             break;
 
-        case GLFW_KEY_I:
-            m_pointLight.AmbientIntensity += ATTEN_STEP;
+        case GLFW_KEY_1:
+            printf("Linear fog\n");
+            m_isAnimatedFog = false;
+            m_phongRenderer.SetLinearFog(m_fogStart, m_fogEnd, m_fogColor);
             break;
 
-        case GLFW_KEY_K:
-            m_pointLight.DiffuseIntensity -= ATTEN_STEP;
+        case GLFW_KEY_2:
+            printf("Exponential fog\n");
+            m_isAnimatedFog = false;
+            m_phongRenderer.SetExpFog(m_fogEnd, m_fogColor, m_fogDensity);
             break;
 
-        case GLFW_KEY_O:
-            m_isOrthoCamera = !m_isOrthoCamera;
+        case GLFW_KEY_3:
+            printf("Exponential squared fog\n");
+            m_isAnimatedFog = false;
+            m_phongRenderer.SetExpSquaredFog(m_fogEnd, m_fogColor, m_fogDensity);
+            break;
+
+        case GLFW_KEY_4:
+            printf("Layered fog\n");
+            m_isAnimatedFog = false;
+            m_phongRenderer.SetLayeredFog(m_fogTop, m_fogEnd, m_fogColor);
+            break;
+
+        case GLFW_KEY_5:
+            printf("Animated fog\n");
+            m_phongRenderer.SetAnimatedFog(m_fogEnd, m_fogDensity, m_fogColor);
+            m_isAnimatedFog = true;
             break;
         }
     }
@@ -311,11 +353,11 @@ void App::CreateWindow()
 
 void App::CreateShadowMap()
 {
-    // m_shadowMapFBO.Init(SHADOW_MAP_WIDTH, SHADOW_MAP_HEIGHT, 3, false, true, false);
-    if (!m_shadowCubeMapFBO.Init(SHADOW_MAP_SIZE))
-    {
-        exit(1);
-    }
+    m_shadowMapFBO.Init(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE, 3, false, true, false);
+    // if (!m_shadowCubeMapFBO.Init(SHADOW_MAP_SIZE))
+    // {
+    //     exit(1);
+    // }
 }
 
 void App::InitCallbacks()
@@ -354,9 +396,9 @@ void App::InitShaders()
 
     m_lightingTech.Enable();
     m_lightingTech.SetTextureUnit(COLOR_TEXTURE_UNIT_INDEX);
-    m_lightingTech.SetShadowCubeMapTextureUnit(SHADOW_CUBE_MAP_TEXTURE_UNIT_INDEX);
-    // m_lightingTech.SetShadowMapTextureUnit(SHADOW_TEXTURE_UNIT_INDEX);
-    // m_lightingTech.SetShadowMapSize(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+    // m_lightingTech.SetShadowCubeMapTextureUnit(SHADOW_CUBE_MAP_TEXTURE_UNIT_INDEX);
+    m_lightingTech.SetShadowMapTextureUnit(SHADOW_TEXTURE_UNIT_INDEX);
+    m_lightingTech.SetShadowMapSize(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
     //    m_lightingTech.SetSpecularExponentTextureUnit(SPECULAR_EXPONENT_UNIT_INDEX);
 
     if (!m_shadowMapTech.Init())
@@ -366,21 +408,26 @@ void App::InitShaders()
     }
 }
 
+void App::InitRenderer()
+{
+    m_phongRenderer.InitPhongRenderer();
+    m_phongRenderer.SetCamera(m_pGameCamera);
+    m_phongRenderer.SetDirLight(m_dirLight);
+}
+
 void App::InitMesh()
 {
-    m_pMesh1 = new BasicMesh();
+    // m_pMesh1 = new BasicMesh();
     // m_pMesh1 = new SkinnedMesh();
     // m_pMesh1->LoadMesh("assets/vanguard/Vanguard.dae");
-    m_pMesh1->LoadMesh("assets/house/house.obj");
+    // m_pMesh1->LoadMesh("assets/house/house.obj");
     // m_pMesh1->LoadMesh("assets/example/example1.glb");
     // m_pMesh1->SetPosition(0.0f, 0.0f, 10.0f);
     // m_pMesh1->SetRotation(glm::radians(-90.0f), 0.0f, 0.0f);
     // m_pMesh1->LoadMesh("assets/ordinary_house/ordinary_house.obj");
 
-    m_pMesh2 = new BasicMesh();
-    m_pMesh2->LoadMesh("assets/cylinder/cylinder.obj");
-
     m_pTerrain = new BasicMesh();
-    m_pTerrain->LoadMesh("assets/box_terrain/box_terrain.obj");
+    //m_pTerrain->LoadMesh("assets/box_terrain/box_terrain.obj");
+    m_pTerrain->LoadMesh("assets/terrain2/terrain2.obj");
     m_pTerrain->SetPosition(0.0f, 0.0f, 0.0f);
 }

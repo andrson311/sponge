@@ -1,5 +1,8 @@
 #pragma once
 #include <iostream>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 struct PersProjInfo
 {
@@ -10,18 +13,17 @@ struct PersProjInfo
     float zFar = 0.0f;
 };
 
-
 struct OrthoProjInfo
 {
-    float r;        // right
-    float l;        // left
-    float b;        // bottom
-    float t;        // top
-    float n;        // z near
-    float f;        // z far
+    float r; // right
+    float l; // left
+    float b; // bottom
+    float t; // top
+    float n; // z near
+    float f; // z far
 
     float Width;
-    float Height;    
+    float Height;
 
     void Print()
     {
@@ -29,4 +31,49 @@ struct OrthoProjInfo
         printf("Bottom %f Top %f\n", b, t);
         printf("Near %f   Far %f\n", n, f);
     }
+};
+
+void CalcTightLightProjection(const glm::mat4 &CameraView,      // in
+                              const glm::vec3 &LightDir,        // in
+                              const PersProjInfo &persProjInfo, // in
+                              glm::vec3 &LightPosWorld,         // out
+                              OrthoProjInfo &orthoProjInfo);
+
+class AABB
+{
+public:
+    AABB() {}
+
+    void Add(const glm::vec3 &v);
+    void Add(const glm::vec4 &v);
+    void UpdateOrthoInfo(struct OrthoProjInfo &o);
+    void Print();
+
+    float MinX = FLT_MAX;
+    float MaxX = -FLT_MAX;
+    float MinY = FLT_MAX;
+    float MaxY = -FLT_MAX;
+    float MinZ = FLT_MAX;
+    float MaxZ = -FLT_MAX;
+};
+
+class Frustum
+{
+public:
+    glm::vec4 NearTopLeft;
+    glm::vec4 NearBottomLeft;
+    glm::vec4 NearTopRight;
+    glm::vec4 NearBottomRight;
+
+    glm::vec4 FarTopLeft;
+    glm::vec4 FarBottomLeft;
+    glm::vec4 FarTopRight;
+    glm::vec4 FarBottomRight;
+
+    Frustum() {};
+
+    void CalcCorners(const PersProjInfo &persProjInfo);
+    void Transform(const glm::mat4 &m);
+    void CalcAABB(AABB &aabb);
+    void Print();
 };

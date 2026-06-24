@@ -56,29 +56,36 @@ private:
     void CreateShadowMap();
     void InitCallbacks();
     void InitCamera();
-    // void InitRenderer();
+    void InitRenderer();
     void InitShaders();
     void InitMesh();
 
     GLFWwindow *window = NULL;
     Camera *m_pGameCamera = NULL;
-    // PhongRenderer m_phongRenderer;
+    PhongRenderer m_phongRenderer;
     LightingTechnique m_lightingTech;
-    ShadowMappingPointLightTechnique m_shadowMapTech;
+    ShadowMappingTechnique m_shadowMapTech;
     BasicMesh *m_pMesh1 = NULL;
-    BasicMesh *m_pMesh2 = NULL;
     BasicMesh *m_pTerrain = NULL;
     PersProjInfo m_persProjInfo;
-    glm::mat4 m_lightPersProjMatrix;
+    glm::mat4 m_lightOrthoProjMatrix;
     glm::mat4 m_cameraOrthoProjMatrix;
-    // DirectionalLight m_dirLight;
-    PointLight m_pointLight;
-    // Framebuffer m_shadowMapFBO;
+    glm::vec3 m_lightWorldPos;
+    DirectionalLight m_dirLight;
+
+    float m_fogStart = 5.0f;
+    float m_fogEnd = 100.0f;
+    float m_fogTop = 2.5f;
+    float m_fogDensity = 0.66f;
+    glm::vec3 m_fogColor = glm::vec3(152.0f/256.0f);
+    bool m_isAnimatedFog = false;
+    long long m_startTime = 0;
+
+    Framebuffer m_shadowMapFBO;
     ShadowCubeMapFBO m_shadowCubeMapFBO;
     glm::vec3 m_cameraPos;
     glm::vec3 m_cameraTarget;
     bool m_cameraOnLight = false;
-    glm::vec3 m_housePositions[4] = {};
-    glm::vec3 m_cylinderPositions[4] = {};
+    glm::vec3 m_positions[1];
     bool m_isOrthoCamera = false;
 };

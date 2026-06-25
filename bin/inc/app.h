@@ -67,6 +67,7 @@ private:
     PhongRenderer m_phongRenderer;
     LightingTechnique m_lightingTech;
     ShadowMappingTechnique m_shadowMapTech;
+    SkinnedMesh *m_pMesh = NULL;
     BasicMesh *m_pMesh1 = NULL;
     BasicMesh *m_pTerrain = NULL;
     PersProjInfo m_persProjInfo;
@@ -78,9 +79,17 @@ private:
     glm::vec3 m_cameraTarget;
     bool m_cameraOnLight = false;
     bool m_isOrthoCamera = false;
-    ShadowMapOffsetTexture* m_pShadowMapOffsetTexture = NULL;
+    ShadowMapOffsetTexture *m_pShadowMapOffsetTexture = NULL;
     int m_shadowMapFilterSize = 0;
     float m_shadowMapSampleRadius = 0.0f;
     int m_shadowMapOffsetTextureSize = 16;
     int m_shadowMapOffsetFilterSize = 8;
+
+    long long m_startTime = 0;
+    long long m_currentTime = 0;
+    bool m_runAnimation = true;
+    long long m_totalPauseTime = 0;
+    long long m_pauseStart = 0;
+    int m_animationIndex = 0;
+    float m_blendFactor = 0.0f;
 };

@@ -430,9 +430,16 @@ void SkinnedMesh::ReadNodeHierarchyBlended(float StartAnimationTimeTicks, float 
         glm::mat4 ScalingM = glm::scale(glm::mat4(1.0f), glm::vec3(BlendedScaling.x, BlendedScaling.y, BlendedScaling.z));
 
         // interpolate rotation
-        aiQuaternion BlendedRotation;
-        aiQuaternion::Interpolate(BlendedRotation, StartTransform.Rotation, EndTransform.Rotation, BlendFactor);
-        glm::quat GLMQuat(BlendedRotation.w, BlendedRotation.x, BlendedRotation.y, BlendedRotation.z);
+        // aiQuaternion BlendedRotation;
+        // aiQuaternion::Interpolate(BlendedRotation, StartTransform.Rotation, EndTransform.Rotation, BlendFactor);
+        // glm::quat GLMQuat(BlendedRotation.w, BlendedRotation.x, BlendedRotation.y, BlendedRotation.z);
+        // glm::mat4 RotationM = glm::mat4_cast(GLMQuat);
+
+        glm::quat StartQuat(StartTransform.Rotation.w, StartTransform.Rotation.x,
+                            StartTransform.Rotation.y, StartTransform.Rotation.z);
+        glm::quat EndQuat(EndTransform.Rotation.w, EndTransform.Rotation.x,
+                            EndTransform.Rotation.y, EndTransform.Rotation.z);
+        glm::quat GLMQuat = glm::slerp(StartQuat, EndQuat, BlendFactor);
         glm::mat4 RotationM = glm::mat4_cast(GLMQuat);
 
         // interpolate translation
@@ -558,12 +565,12 @@ const aiNodeAnim *SkinnedMesh::FindNodeAnim(const aiAnimation &Animation, const 
 {
     for (u_int i = 0; i < Animation.mNumChannels; i++)
     {
-        const aiNodeAnim* pNodeAnim = Animation.mChannels[i];
+        const aiNodeAnim *pNodeAnim = Animation.mChannels[i];
         if (std::string(pNodeAnim->mNodeName.data) == NodeName)
         {
             return pNodeAnim;
         }
     }
-    
+
     return NULL;
 }

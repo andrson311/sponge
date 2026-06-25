@@ -46,41 +46,8 @@ static void MouseButtonCallback(GLFWwindow *window, int Button, int Action, int 
 App::App()
 {
     m_dirLight.AmbientIntensity = 0.5f;
-    m_dirLight.DiffuseIntensity = 1.0f;
-    m_dirLight.Color = glm::vec3(1.0f);
+    m_dirLight.DiffuseIntensity = 5.0f;
     m_dirLight.WorldDirection = glm::vec3(1.0f, -0.5f, 0.0f);
-
-    OrthoProjInfo shadowOrthoProjInfo;
-    shadowOrthoProjInfo.l = -20.0f;
-    shadowOrthoProjInfo.r = 20.0f;
-    shadowOrthoProjInfo.b = -20.0f;
-    shadowOrthoProjInfo.t = 20.0f;
-    shadowOrthoProjInfo.n = -20.0f;
-    shadowOrthoProjInfo.f = 20.0f;
-
-    m_lightOrthoProjMatrix = glm::ortho(
-        shadowOrthoProjInfo.l,
-        shadowOrthoProjInfo.r,
-        shadowOrthoProjInfo.b,
-        shadowOrthoProjInfo.t,
-        shadowOrthoProjInfo.n,
-        shadowOrthoProjInfo.f);
-
-    OrthoProjInfo cameraOrthoProjInfo;
-    cameraOrthoProjInfo.l = -WINDOW_WIDTH / 250.0f;
-    cameraOrthoProjInfo.r = WINDOW_WIDTH / 250.0f;
-    cameraOrthoProjInfo.b = -WINDOW_HEIGHT / 250.0f;
-    cameraOrthoProjInfo.t = WINDOW_HEIGHT / 250.0f;
-    cameraOrthoProjInfo.n = 1.0f;
-    cameraOrthoProjInfo.f = 100.0f;
-
-    m_cameraOrthoProjMatrix = glm::ortho(
-        cameraOrthoProjInfo.l,
-        cameraOrthoProjInfo.r,
-        cameraOrthoProjInfo.b,
-        cameraOrthoProjInfo.t,
-        cameraOrthoProjInfo.n,
-        cameraOrthoProjInfo.f);
 }
 
 App::~App()
@@ -99,12 +66,15 @@ App::~App()
 void App::Init()
 {
     CreateWindow();
-    CreateShadowMap();
+    // CreateShadowMap();
     InitCallbacks();
     InitCamera();
     InitMesh();
-    InitShaders();
-    // InitRenderer();
+    // InitShaders();
+    InitRenderer();
+
+    m_startTime = GetCurrentTimeMillis();
+    m_currentTime = m_startTime;
 }
 
 void App::Run()
@@ -120,8 +90,8 @@ void App::Run()
 
 void App::RenderSceneCB()
 {
-    // static float foo = 0.0f;
-    // foo += 0.01f;
+    static float foo = 0.0f;
+    foo += 0.003f;
     // m_dirLight.WorldDirection = glm::vec3(sinf(foo), -0.5f, cosf(foo));
 
     // if (foo >= glm::pi<float>())
@@ -129,8 +99,66 @@ void App::RenderSceneCB()
     //     foo = 0.0f;
     // }
 
-    ShadowMapPass();
-    LightingPass();
+    // ShadowMapPass();
+    // LightingPass();
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    m_pGameCamera->OnRender();
+
+    if (m_runAnimation)
+    {
+        m_currentTime = GetCurrentTimeMillis();
+    }
+
+    float AnimationTimeSec = (float)((double)m_currentTime - (double)m_startTime) / 1000.0f;
+    float TotalPauseTimeSec = (float)((double)m_totalPauseTime / 1000.0f);
+    AnimationTimeSec -= TotalPauseTimeSec;
+
+    static float BlendFactor = 0.0f;
+    static float BlendDirection = 0.0001f;
+
+    m_phongRenderer.RenderAnimationBlended(m_pMesh, AnimationTimeSec, 0, 1, m_blendFactor);
+
+    BlendFactor += BlendDirection;
+
+    if (BlendDirection > 0.0f)
+    {
+        if (BlendFactor >= 0.9f || BlendFactor <= 0.1f)
+        {
+            BlendDirection = 0.0002f;
+        }
+        else
+        {
+            BlendDirection = 0.001f;
+        }
+    }
+    else
+    {
+        if (BlendFactor > 1.0f || BlendFactor < 0.0f)
+        {
+            BlendDirection = -0.0002f;
+        }
+        else
+        {
+            BlendDirection = -0.001f;
+        }
+    }
+
+    if (BlendFactor > 1.0f || BlendFactor < 0.0f)
+    {
+        BlendDirection *= -1.0f;
+    }
+
+    if (BlendFactor < 0.0f)
+    {
+        BlendFactor = 0.0f;
+    }
+    else if (BlendFactor > 1.0f)
+    {
+        BlendFactor = 1.0f;
+    }
+
+    m_phongRenderer.Render(m_pTerrain);
 }
 
 void App::ShadowMapPass()
@@ -226,56 +254,64 @@ void App::LightingPass()
 
 void App::KeyBoardCB(u_int key, int state)
 {
+    if (key == GLFW_KEY_F)
+    {
+        m_blendFactor += 0.005f;
+        if (m_blendFactor > 1.0f)
+        {
+            m_blendFactor = 1.0f;
+        }
+        printf("%f\n", m_blendFactor);
+        return;
+    }
+    else if (key == GLFW_KEY_G)
+    {
+        m_blendFactor -= 0.005f;
+        if (m_blendFactor < 0.0f)
+        {
+            m_blendFactor = 0.0f;
+        }
+        printf("%f\n", m_blendFactor);
+        return;
+    }
+
     if (state == GLFW_PRESS)
     {
         switch (key)
         {
+        case GLFW_KEY_0:
+            m_animationIndex = 0;
+            break;
+
+        case GLFW_KEY_1:
+            m_animationIndex = 1;
+            break;
+
+        case GLFW_KEY_SPACE:
+            m_runAnimation = !m_runAnimation;
+            if (m_runAnimation)
+            {
+                long long CurrentTime = GetCurrentTimeMillis();
+                // printf("Resumed at %lld\n", CurrentTime);
+                m_totalPauseTime += (CurrentTime - m_pauseStart);
+                // printf("Total pause time %lld\n", m_totalPauseTime);
+            }
+            else
+            {
+                m_pauseStart = GetCurrentTimeMillis();
+                // printf("Paused at %lld\n", GetCurrentTimeMillis());
+            }
+            break;
+
         case GLFW_KEY_ESCAPE:
         case GLFW_KEY_Q:
             glfwDestroyWindow(window);
             glfwTerminate();
             exit(0);
-            break;
-
-        case GLFW_KEY_P:
-            m_isOrthoCamera = !m_isOrthoCamera;
-            break;
-
-        case GLFW_KEY_F:
-            m_shadowMapFilterSize++;
-            printf("Shadow map filter size increased to %d\n", m_shadowMapFilterSize);
-            m_lightingTech.SetShadowMapFilterSize(m_shadowMapFilterSize);
-            break;
-
-        case GLFW_KEY_Z:
-            if (m_shadowMapFilterSize > 0)
-            {
-                m_shadowMapFilterSize--;
-                printf("Shadow map filter size decreased to %d\n", m_shadowMapFilterSize);
-                m_lightingTech.SetShadowMapFilterSize(m_shadowMapFilterSize);
-            }
-            break;
-
-        case GLFW_KEY_G:
-            m_shadowMapSampleRadius++;
-            printf("Shadow map radius increased to %f\n", m_shadowMapSampleRadius);
-            m_lightingTech.SetShadowMapOffsetTextureParams((float)m_shadowMapOffsetTextureSize,
-                                                           (float)m_shadowMapOffsetFilterSize,
-                                                           m_shadowMapSampleRadius);
-            break;
-
-        case GLFW_KEY_X:
-            if (m_shadowMapSampleRadius > 0)
-            {
-                m_shadowMapSampleRadius--;
-                printf("Shadow map radius decrease to %f\n", m_shadowMapSampleRadius);
-                m_lightingTech.SetShadowMapOffsetTextureParams((float)m_shadowMapOffsetTextureSize,
-                                                               (float)m_shadowMapOffsetFilterSize,
-                                                               m_shadowMapSampleRadius);
-            }
-            break;
         }
     }
+
+    m_pGameCamera->OnKeyboard(key);
 }
 
 void App::ProcessHeldKeys()
@@ -352,7 +388,7 @@ void App::InitCallbacks()
 
 void App::InitCamera()
 {
-    glm::vec3 Pos(0.0f, 0.0f, 0.0f);
+    glm::vec3 Pos(0.0f, 5.0f, 0.0f);
     glm::vec3 Target(0.0f, 0.0f, 1.0f);
     glm::vec3 Up(0.0f, 1.0f, 0.0f);
 
@@ -388,7 +424,7 @@ void App::InitShaders()
         (float)m_shadowMapOffsetTextureSize,
         (float)m_shadowMapOffsetFilterSize,
         m_shadowMapSampleRadius);
-    
+
     //    m_lightingTech.SetSpecularExponentTextureUnit(SPECULAR_EXPONENT_UNIT_INDEX);
 
     if (!m_shadowMapTech.Init())
@@ -422,10 +458,11 @@ void App::InitMesh()
     // m_pMesh->SetPosition(0.0f, 0.0f, 55.0f);
     // m_pMesh->SetScale(0.01f);
 
-    m_pMesh1 = new BasicMesh();
-    m_pMesh1->LoadMesh("assets/dragon/dragon.obj");
-    m_pMesh1->SetPosition(-15.0f, 0.0f, 0.0f);
-    m_pMesh1->SetRotation(0.0f, glm::radians(90.0f), 0.0f);
+    m_pMesh = new SkinnedMesh();
+    m_pMesh->LoadMesh("assets/zombie/dancing_zombie.glb");
+    m_pMesh->SetRotation(glm::radians(90.0f), 0.0f, 0.0f);
+    //m_pMesh->SetPosition(0.0f, 0.0f, 55.0f);
+    //m_pMesh->SetScale(0.01f);
 
     m_pTerrain = new BasicMesh();
     m_pTerrain->LoadMesh("assets/box_terrain/box_terrain.obj");

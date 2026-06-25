@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "math.h"
+#include "math_3d.h"
 #include "camera_api.h"
 
 class Camera : public CameraAPI

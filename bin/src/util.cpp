@@ -1,8 +1,8 @@
-#include "../inc/util.h"
 #include <stdio.h>
 #include <string>
 #include <fstream>
 #include <sys/time.h>
+#include "util.h"
 
 long long GetCurrentTimeMillis()
 {

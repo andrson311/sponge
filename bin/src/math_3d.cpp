@@ -1,4 +1,4 @@
-#include "../inc/math.h"
+#include "math_3d.h"
 
 // axis-aligned bounding box
 

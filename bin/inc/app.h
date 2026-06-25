@@ -14,6 +14,8 @@
 #include "shadow_mapping_technique.h"
 #include "shadow_cube_map_fbo.h"
 #include "shadow_mapping_technique_point_light.h"
+#include "framebuffer_object.h"
+#include "shadow_map_offset_texture.h"
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
@@ -70,22 +72,15 @@ private:
     PersProjInfo m_persProjInfo;
     glm::mat4 m_lightOrthoProjMatrix;
     glm::mat4 m_cameraOrthoProjMatrix;
-    glm::vec3 m_lightWorldPos;
     DirectionalLight m_dirLight;
-
-    float m_fogStart = 5.0f;
-    float m_fogEnd = 100.0f;
-    float m_fogTop = 2.5f;
-    float m_fogDensity = 0.66f;
-    glm::vec3 m_fogColor = glm::vec3(152.0f/256.0f);
-    bool m_isAnimatedFog = false;
-    long long m_startTime = 0;
-
-    Framebuffer m_shadowMapFBO;
-    ShadowCubeMapFBO m_shadowCubeMapFBO;
+    FramebufferObject m_shadowMapFBO;
     glm::vec3 m_cameraPos;
     glm::vec3 m_cameraTarget;
     bool m_cameraOnLight = false;
-    glm::vec3 m_positions[1];
     bool m_isOrthoCamera = false;
+    ShadowMapOffsetTexture* m_pShadowMapOffsetTexture = NULL;
+    int m_shadowMapFilterSize = 0;
+    float m_shadowMapSampleRadius = 0.0f;
+    int m_shadowMapOffsetTextureSize = 16;
+    int m_shadowMapOffsetFilterSize = 8;
 };

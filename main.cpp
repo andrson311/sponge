@@ -4,10 +4,12 @@
 #include <cstdint>
 #include <unistd.h>
 #include "app.h"
+#include "app_terrain.h"
 
 int main(int argc, char **argv)
 {
-    App *app = new App();
+    // App *app = new App();
+    AppTerrain *app = new AppTerrain();
 
     app->Init();
 

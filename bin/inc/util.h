@@ -9,6 +9,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#define WINDOW_WIDTH 1280
+#define WINDOW_HEIGHT 720
+
+#define SHADOW_MAP_SIZE 4096
+
 #define ASSIMP_LOAD_FLAGS ( \
     aiProcess_Triangulate | \
     aiProcess_GenSmoothNormals | \
@@ -56,6 +61,7 @@
 
 long long GetCurrentTimeMillis();
 bool ReadFile(const char *pFileName, std::string &outFile);
+char* ReadBinaryFile(const char* pFileName, int& size);
 std::string GetDirFromFilename(const std::string &Filename);
 std::string GetFullPath(const std::string &Dir, const aiString &Path);
 glm::mat4 AssimpToGLM(const aiMatrix4x4 &m);

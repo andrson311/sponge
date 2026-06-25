@@ -2,6 +2,11 @@
 #include <string>
 #include <fstream>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <stdarg.h>
 #include "util.h"
 
 long long GetCurrentTimeMillis()
@@ -38,6 +43,42 @@ bool ReadFile(const char *pFileName, std::string &outFile)
     }
 
     return ret;
+}
+
+char *ReadBinaryFile(const char *pFilename, int &size)
+{
+    FILE *f = fopen(pFilename, "rb");
+
+    if (!f)
+    {
+        printf("Error opening the binary file");
+        exit(0);
+    }
+
+    struct stat stat_buf;
+    int error = stat(pFilename, &stat_buf);
+
+    if (error)
+    {
+        printf("Error getting file stats");
+        return NULL;
+    }
+
+    size = stat_buf.st_size;
+
+    char *p = (char *)malloc(size);
+    assert(p);
+
+    size_t bytes_read = fread(p, 1, size, f);
+    if (bytes_read != size)
+    {
+        printf("Error reading file");
+        exit(0);
+    }
+
+    fclose(f);
+
+    return p;
 }
 
 std::string GetDirFromFilename(const std::string &Filename)

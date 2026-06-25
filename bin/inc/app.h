@@ -17,11 +17,6 @@
 #include "framebuffer_object.h"
 #include "shadow_map_offset_texture.h"
 
-#define WINDOW_WIDTH 1280
-#define WINDOW_HEIGHT 720
-
-#define SHADOW_MAP_SIZE 4096
-
 struct CameraDirection
 {
     GLenum CubemapFace;

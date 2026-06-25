@@ -45,9 +45,38 @@ static void MouseButtonCallback(GLFWwindow *window, int Button, int Action, int 
 
 App::App()
 {
-    m_dirLight.AmbientIntensity = 0.5f;
-    m_dirLight.DiffuseIntensity = 5.0f;
-    m_dirLight.WorldDirection = glm::vec3(1.0f, -0.5f, 0.0f);
+    m_dirLight.WorldDirection = glm::vec3(1.0f, -0.15f, 1.0f);
+    m_dirLight.DiffuseIntensity = 4.0f;
+
+    m_pointLights[0].WorldPosition = glm::vec3(5.0f);
+    m_pointLights[1].WorldPosition = glm::vec3(-7.0f, 3.0f, 7.0f);
+
+    float metalRough = 0.43f;
+
+    // gold
+    m_meshData[0] = {
+        glm::vec3(-20.0f, 0.0f, 75.0f),
+        glm::vec3(1.0f, 0.71f, 0.29f)};
+
+    // copper
+    m_meshData[1] = {
+        glm::vec3(-10.0f, 0.0f, 75.0f),
+        glm::vec3(0.95f, 0.64f, 0.54f)};
+
+    // aluminium
+    m_meshData[2] = {
+        glm::vec3(0.0f, 0.0f, 75.0f),
+        glm::vec3(0.91f, 0.92f, 0.92f)};
+
+    // titanium
+    m_meshData[3] = {
+        glm::vec3(10.0f, 0.0f, 75.0f),
+        glm::vec3(0.542f, 0.497f, 0.449f)};
+
+    // silver
+    m_meshData[4] = {
+        glm::vec3(20.0f, 0.0f, 75.0f),
+        glm::vec3(0.95f, 0.93f, 0.88f)};
 }
 
 App::~App()
@@ -55,11 +84,6 @@ App::~App()
     if (m_pGameCamera)
     {
         delete m_pGameCamera;
-    }
-
-    if (m_pMesh1)
-    {
-        delete m_pMesh1;
     }
 }
 
@@ -90,75 +114,37 @@ void App::Run()
 
 void App::RenderSceneCB()
 {
-    static float foo = 0.0f;
-    foo += 0.003f;
-    // m_dirLight.WorldDirection = glm::vec3(sinf(foo), -0.5f, cosf(foo));
-
-    // if (foo >= glm::pi<float>())
-    // {
-    //     foo = 0.0f;
-    // }
-
-    // ShadowMapPass();
-    // LightingPass();
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_pGameCamera->OnRender();
 
-    if (m_runAnimation)
+    static float foo = 0.0f;
+    foo += 0.01f;
+
+    m_pointLights[0].WorldPosition = glm::vec3(sinf(foo) * 7.0f, 3.0f, cosf(foo) * 7.0f);
+    m_phongRenderer.UpdatePointLightPos(0, m_pointLights[0].WorldPosition);
+
+    m_dirLight.WorldDirection = glm::vec3(sinf(foo), -0.5f, cosf(foo));
+    m_phongRenderer.UpdateDirLightDir(m_dirLight.WorldDirection);
+
+    for (int i = 0; i < std::size(m_meshData); i++)
     {
-        m_currentTime = GetCurrentTimeMillis();
+        m_pMesh->SetPosition(m_meshData[i].Pos);
+        m_pMesh->GetPBRMaterial().Roughness = 0.43f;
+        m_pMesh->GetPBRMaterial().IsMetal = true;
+        m_pMesh->GetPBRMaterial().Color = m_meshData[i].Color;
+        m_phongRenderer.Render(m_pMesh);
     }
 
-    float AnimationTimeSec = (float)((double)m_currentTime - (double)m_startTime) / 1000.0f;
-    float TotalPauseTimeSec = (float)((double)m_totalPauseTime / 1000.0f);
-    AnimationTimeSec -= TotalPauseTimeSec;
+    float Roughness[] = {0.1f, 0.2f, 0.3f, 0.4f, 0.5f};
 
-    static float BlendFactor = 0.0f;
-    static float BlendDirection = 0.0001f;
-
-    m_phongRenderer.RenderAnimationBlended(m_pMesh, AnimationTimeSec, 0, 1, m_blendFactor);
-
-    BlendFactor += BlendDirection;
-
-    if (BlendDirection > 0.0f)
+    for (int i = 0; i < std::size(m_meshData); i++)
     {
-        if (BlendFactor >= 0.9f || BlendFactor <= 0.1f)
-        {
-            BlendDirection = 0.0002f;
-        }
-        else
-        {
-            BlendDirection = 0.001f;
-        }
+        m_pMesh->SetPosition(m_meshData[i].Pos + glm::vec3(0.0f, 15.0f, 0.0f));
+        m_pMesh->GetPBRMaterial().Roughness = Roughness[i];
+        m_pMesh->GetPBRMaterial().IsMetal = false;
+        m_pMesh->GetPBRMaterial().Color = glm::vec3(0.1f, 0.33f, 0.17f);
+        m_phongRenderer.Render(m_pMesh);
     }
-    else
-    {
-        if (BlendFactor > 1.0f || BlendFactor < 0.0f)
-        {
-            BlendDirection = -0.0002f;
-        }
-        else
-        {
-            BlendDirection = -0.001f;
-        }
-    }
-
-    if (BlendFactor > 1.0f || BlendFactor < 0.0f)
-    {
-        BlendDirection *= -1.0f;
-    }
-
-    if (BlendFactor < 0.0f)
-    {
-        BlendFactor = 0.0f;
-    }
-    else if (BlendFactor > 1.0f)
-    {
-        BlendFactor = 1.0f;
-    }
-
-    m_phongRenderer.Render(m_pTerrain);
 }
 
 void App::ShadowMapPass()
@@ -254,55 +240,10 @@ void App::LightingPass()
 
 void App::KeyBoardCB(u_int key, int state)
 {
-    if (key == GLFW_KEY_F)
-    {
-        m_blendFactor += 0.005f;
-        if (m_blendFactor > 1.0f)
-        {
-            m_blendFactor = 1.0f;
-        }
-        printf("%f\n", m_blendFactor);
-        return;
-    }
-    else if (key == GLFW_KEY_G)
-    {
-        m_blendFactor -= 0.005f;
-        if (m_blendFactor < 0.0f)
-        {
-            m_blendFactor = 0.0f;
-        }
-        printf("%f\n", m_blendFactor);
-        return;
-    }
-
     if (state == GLFW_PRESS)
     {
         switch (key)
         {
-        case GLFW_KEY_0:
-            m_animationIndex = 0;
-            break;
-
-        case GLFW_KEY_1:
-            m_animationIndex = 1;
-            break;
-
-        case GLFW_KEY_SPACE:
-            m_runAnimation = !m_runAnimation;
-            if (m_runAnimation)
-            {
-                long long CurrentTime = GetCurrentTimeMillis();
-                // printf("Resumed at %lld\n", CurrentTime);
-                m_totalPauseTime += (CurrentTime - m_pauseStart);
-                // printf("Total pause time %lld\n", m_totalPauseTime);
-            }
-            else
-            {
-                m_pauseStart = GetCurrentTimeMillis();
-                // printf("Paused at %lld\n", GetCurrentTimeMillis());
-            }
-            break;
-
         case GLFW_KEY_ESCAPE:
         case GLFW_KEY_Q:
             glfwDestroyWindow(window);
@@ -439,6 +380,8 @@ void App::InitRenderer()
     m_phongRenderer.InitPhongRenderer();
     m_phongRenderer.SetCamera(m_pGameCamera);
     m_phongRenderer.SetDirLight(m_dirLight);
+    m_phongRenderer.SetPointLights(std::size(m_pointLights), &m_pointLights[0]);
+    m_phongRenderer.SetPBR(true);
 }
 
 void App::InitMesh()
@@ -459,10 +402,13 @@ void App::InitMesh()
     // m_pMesh->SetScale(0.01f);
 
     m_pMesh = new SkinnedMesh();
-    m_pMesh->LoadMesh("assets/zombie/dancing_zombie.glb");
-    m_pMesh->SetRotation(glm::radians(90.0f), 0.0f, 0.0f);
-    //m_pMesh->SetPosition(0.0f, 0.0f, 55.0f);
-    //m_pMesh->SetScale(0.01f);
+    // m_pMesh->LoadMesh("assets/zombie/dancing_zombie.glb");
+    m_pMesh->LoadMesh("assets/dragon/dragon.obj");
+    m_pMesh->SetPBR(true);
+    m_pMesh->SetRotation(0.0f, glm::radians(90.0f), 0.0f);
+    // m_pMesh->SetRotation(glm::radians(90.0f), 0.0f, 0.0f);
+    // m_pMesh->SetPosition(0.0f, 0.0f, 55.0f);
+    // m_pMesh->SetScale(0.01f);
 
     m_pTerrain = new BasicMesh();
     m_pTerrain->LoadMesh("assets/box_terrain/box_terrain.obj");

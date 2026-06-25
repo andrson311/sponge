@@ -92,4 +92,12 @@ private:
     long long m_pauseStart = 0;
     int m_animationIndex = 0;
     float m_blendFactor = 0.0f;
+
+    PointLight m_pointLights[2];
+
+    struct
+    {
+        glm::vec3 Pos;
+        glm::vec3 Color;
+    } m_meshData[5];
 };

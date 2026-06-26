@@ -227,7 +227,7 @@ void AppTerrain::InitTerrain()
 
     // m_terrain.LoadFromFile("assets/heightmaps/heightmap.save");
 
-    int Size = 512;
+    int Size = 256;
     float Roughness = 1.0f;
     float MinHeight = 0.0f;
     float MaxHeight = 250.0f;

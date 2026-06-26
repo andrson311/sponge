@@ -1,4 +1,6 @@
 #include "terrain.h"
+#include "texture_config.h"
+#include "stb_image_write.h"
 
 BaseTerrain::~BaseTerrain()
 {
@@ -11,7 +13,33 @@ void BaseTerrain::Destroy()
     m_triangleList.Destroy();
 }
 
-void BaseTerrain::InitTerrain(float WorldScale)
+void BaseTerrain::InitTerrain(float WorldScale, float TextureScale, const std::vector<std::string> &TextureFilenames)
+{
+    if (!m_terrainTech.Init())
+    {
+        printf("Error initializing terrain tech\n");
+        exit(0);
+    }
+
+    if (TextureFilenames.size() != std::size(m_pTextures))
+    {
+        printf("%s:%d - number of provided textures (%d) is not equal to the size of the texture array (%d)\n",
+               __FILE__, __LINE__, (int)TextureFilenames.size(), (int)std::size(m_pTextures));
+        exit(0);
+    }
+
+    m_worldScale = WorldScale;
+    m_textureScale = TextureScale;
+    m_isSingleTexTerrain = false;
+
+    for (int i = 0; i < std::size(m_pTextures); i++)
+    {
+        m_pTextures[i] = new Texture(GL_TEXTURE_2D);
+        m_pTextures[i]->Load(TextureFilenames[i]);
+    }
+}
+
+void BaseTerrain::InitTerrain(float WorldScale, float TextureScale)
 {
     if (!m_terrainTech.Init())
     {
@@ -20,6 +48,30 @@ void BaseTerrain::InitTerrain(float WorldScale)
     }
 
     m_worldScale = WorldScale;
+    m_textureScale = TextureScale;
+    m_isSingleTexTerrain = true;
+}
+
+float BaseTerrain::GetHeightInterpolated(float x, float z) const
+{
+    float BaseHeight = GetHeight((int)x, (int)z);
+
+    if (((int)x + 1 >= m_terrainSize) || ((int)z + 1 >= m_terrainSize))
+    {
+        return BaseHeight;
+    }
+
+    float NextXHeight = GetHeight((int)x + 1, (int)z);
+    float RatioX = x - floorf(x);
+    float InterpolatedHeightX = (float)(NextXHeight - BaseHeight) * RatioX + (float)BaseHeight;
+
+    float NextZHeight = GetHeight((int)x, (int)z + 1);
+    float RatioZ = z - floorf(z);
+    float InterpolatedHeightZ = (float)(NextZHeight - BaseHeight) * RatioZ + (float)BaseHeight;
+
+    float FinalHeight = (InterpolatedHeightX + InterpolatedHeightZ) / 2.0f;
+
+    return FinalHeight;
 }
 
 void BaseTerrain::LoadFromFile(const char *pFilename)
@@ -52,12 +104,72 @@ void BaseTerrain::LoadHeightMapFile(const char *pFilename)
     m_heightMap.InitArray2D(m_terrainSize, m_terrainSize, (float *)p);
 }
 
+void BaseTerrain::SaveToFile(const char *pFilename)
+{
+    u_char *p = (u_char *)malloc(m_terrainSize * m_terrainSize);
+    float *src = m_heightMap.GetBaseAddr();
+    float Delta = m_maxHeight - m_minHeight;
+
+    for (int i = 0; i < m_terrainSize * m_terrainSize; i++)
+    {
+        float f = (src[i] - m_minHeight) / Delta;
+        p[i] = (u_char)(f * 255.0f);
+    }
+
+    stbi_write_png("heightmap.png", m_terrainSize, m_terrainSize, 1, p, m_terrainSize);
+
+    free(p);
+}
+
 void BaseTerrain::Render(const Camera &Camera)
 {
     glm::mat4 VP = Camera.GetViewProjMatrix();
 
-    m_terrainTech.Enable();
-    m_terrainTech.SetVP(VP);
+    if (m_isSingleTexTerrain)
+    {
+        m_singleTexTerrainTech.Enable();
+        m_singleTexTerrainTech.SetVP(VP);
+    }
+    else
+    {
+        m_terrainTech.Enable();
+        m_terrainTech.SetVP(VP);
+    }
+
+    for (int i = 0; i < std::size(m_pTextures); i++)
+    {
+        if (m_pTextures[i])
+        {
+            m_pTextures[i]->Bind(COLOR_TEXTURE_UNIT_0 + i);
+        }
+    }
 
     m_triangleList.Render();
+}
+
+void BaseTerrain::SetMinMaxHeight(float MinHeight, float MaxHeight)
+{
+    m_minHeight = MinHeight;
+    m_maxHeight = MaxHeight;
+
+    if (m_isSingleTexTerrain)
+    {
+        m_singleTexTerrainTech.Enable();
+        m_singleTexTerrainTech.SetMinMaxHeight(MinHeight, MaxHeight);
+    }
+    else
+    {
+        m_terrainTech.Enable();
+        m_terrainTech.SetMinMaxHeight(MinHeight, MaxHeight);
+    }
+}
+
+void BaseTerrain::SetTextureHeights(float Tex0Height, float Tex1Height, float Tex2Height, float Tex3Height)
+{
+    if (m_isSingleTexTerrain)
+    {
+        printf("%s:%d - only for multi texturing\n", __FILE__, __LINE__);
+        exit(0);
+    }
+    m_terrainTech.SetTextureHeights(Tex0Height, Tex1Height, Tex2Height, Tex3Height);
 }

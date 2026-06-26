@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "bin/inc/math.h"
+#include "bin/inc/math_3d.h"
 
 // config parameters
 glm::vec3 CameraPos(1.0f, 0.0f, 5.0f);

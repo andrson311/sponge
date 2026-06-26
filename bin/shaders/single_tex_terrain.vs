@@ -9,7 +9,6 @@ uniform float gMaxHeight;
 
 out vec4 Color;
 out vec2 Tex;
-out vec3 WorldPos;
 
 void main()
 {
@@ -24,6 +23,4 @@ void main()
     Color = vec4(c, c, c, 1.0);
 
     Tex = InTex;
-    
-    WorldPos = Position;
 }

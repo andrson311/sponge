@@ -12,8 +12,10 @@
 #include "util.h"
 #include "camera.h"
 #include "glfw.h"
-#include "fault_formation_terrain.h"
+// #include "fault_formation_terrain.h"
 #include "midpoint_disp_terrain.h"
+#include "texture_config.h"
+#include "texture_generator.h"
 
 class AppTerrain
 {
@@ -35,6 +37,8 @@ private:
     void InitCallbacks();
     void InitCamera();
     void InitTerrain();
+    void InitTerrainTextureGenerator();
+    void InitTerrainMultiTextures();
     void InitGUI();
 
     GLFWwindow* window = NULL;
@@ -42,4 +46,5 @@ private:
     bool m_isWireframe = false;
     MidpointDispTerrain m_terrain;
     bool m_showGui = false;
+    bool m_isPaused = false;
 };

@@ -61,31 +61,44 @@ void AppTerrain::Run()
 
         if (m_showGui)
         {
+            // Start the Dear ImGui frame
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
 
             static int Iterations = 100;
-            static float MaxHeight = 200.0f;
-            static float Roughness = 1.5f;
+            static float MaxHeight = 256.0f;
+            static float Roughness = 1.0f;
 
-            ImGui::Begin("Terrain rendering test");
+            ImGui::Begin("Terrain Demo 4"); // Create a window called "Hello, world!" and append into it.
 
             ImGui::SliderInt("Iterations", &Iterations, 0, 1000);
             ImGui::SliderFloat("MaxHeight", &MaxHeight, 0.0f, 1000.0f);
             ImGui::SliderFloat("Roughness", &Roughness, 0.0f, 5.0f);
 
+            static float Height0 = 64.0f;
+            static float Height1 = 128.0f;
+            static float Height2 = 192.0f;
+            static float Height3 = 256.0f;
+
+            ImGui::SliderFloat("Height0", &Height0, 0.0f, 64.0f);
+            ImGui::SliderFloat("Height1", &Height1, 64.0f, 128.0f);
+            ImGui::SliderFloat("Height2", &Height2, 128.0f, 192.0f);
+            ImGui::SliderFloat("Height3", &Height3, 192.0f, 256.0f);
+
             if (ImGui::Button("Generate"))
             {
                 m_terrain.Destroy();
-                int Size = 256;
+                int Size = 512;
                 float MinHeight = 0.0f;
-                m_terrain.CreatMidpointDisplacement(Size, Roughness, MinHeight, MaxHeight);
+                m_terrain.CreateMidpointDisplacement(Size, Roughness, MinHeight, MaxHeight);
+                m_terrain.SetTextureHeights(Height0, Height1, Height2, Height3);
             }
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
 
+            // Rendering
             ImGui::Render();
             int display_w, display_h;
             glfwGetFramebufferSize(window, &display_w, &display_h);
@@ -94,7 +107,6 @@ void AppTerrain::Run()
 
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         }
-
         RenderScene();
         glfwSwapBuffers(window);
     }
@@ -107,7 +119,24 @@ void AppTerrain::RenderScene()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    m_pGameCamera->OnRender();
+    static float foo = 0.0f;
+    float R = 1100.0f;
+    float S = 512.0f;
+
+    glm::vec3 Pos(S + cosf(foo) * R, 375.0f, S + sinf(foo) * R);
+    m_pGameCamera->SetPosition(Pos);
+
+    glm::vec3 Center(S, Pos.y * 0.60f, S);
+    glm::vec3 Target = Center - Pos;
+    m_pGameCamera->SetTarget(Target);
+    m_pGameCamera->SetUp(0.0f, 1.0f, 0.0f);
+
+    if (!m_isPaused)
+    {
+        foo += 0.001f;
+    }
+
+    // m_pGameCamera->OnRender();
     m_terrain.Render(*m_pGameCamera);
 }
 
@@ -144,13 +173,17 @@ void AppTerrain::KeyboardCB(u_int key, int state)
             }
             break;
 
+        case GLFW_KEY_P:
+            m_isPaused = !m_isPaused;
+            break;
+
         case GLFW_KEY_SPACE:
             m_showGui = !m_showGui;
             break;
         }
-
-        m_pGameCamera->OnKeyboard(key);
     }
+
+    m_pGameCamera->OnKeyboard(key);
 }
 
 void AppTerrain::ProcessHeldKeys()
@@ -220,30 +253,82 @@ void AppTerrain::InitCamera()
     m_pGameCamera->SetSpeed(2.0f);
 }
 
+// #define USE_TEXTURE_GENERATOR
+
 void AppTerrain::InitTerrain()
 {
-    float WorldScale = 4.0f;
-    m_terrain.InitTerrain(WorldScale);
+#ifdef USE_TEXTURE_GENERATOR
+    InitTerrainTextureGenerator();
+#else
+    InitTerrainMultiTextures();
+#endif
+    m_terrain.SaveToFile("heightmap.png");
+}
 
-    // m_terrain.LoadFromFile("assets/heightmaps/heightmap.save");
+void AppTerrain::InitTerrainTextureGenerator()
+{
+    float WorldScale = 1.0f;
+    float TextureScale = 10.0f;
 
-    int Size = 256;
+    m_terrain.InitTerrain(WorldScale, TextureScale);
+
+    int Size = 512;
     float Roughness = 1.0f;
     float MinHeight = 0.0f;
-    float MaxHeight = 250.0f;
+    float MaxHeight = 156.0f;
 
-    m_terrain.CreatMidpointDisplacement(Size, Roughness, MinHeight, MaxHeight);
+    m_terrain.CreateMidpointDisplacement(Size, Roughness, MinHeight, MaxHeight);
+
+    TextureGenerator TexGen;
+
+    TexGen.LoadTile("assets/terrain_textures/rock02_2.jpg");
+    // TexGen.LoadTile("assets/terrain_textures/IMGP5487_seamless.jpg");
+    // TexGen.LoadTile("assets/terrain_textures/IMGP5525_seamless.jpg");
+    TexGen.LoadTile("assets/terrain_textures/rock01.jpg");
+
+    TexGen.LoadTile("assets/terrain_textures/tilable-IMG_0044-verydark.png");
+
+    // TexGen.LoadTile("assets/terrain_textures/grass1.jpg");
+    // TexGen.LoadTile("assets/terrain_textures/Rock6.png");
+
+    TexGen.LoadTile("assets/terrain_textures/water.png");
+    int TextureSize = 1024;
+
+    Texture *pTexture = TexGen.GenerateTexture(TextureSize, &m_terrain, MinHeight, MaxHeight);
+    m_terrain.SetTexture(pTexture);
+}
+
+void AppTerrain::InitTerrainMultiTextures()
+{
+    float WorldScale = 2.0f;
+
+    float TextureScale = 4.0f;
+
+    std::vector<std::string> TextureFilenames;
+    TextureFilenames.push_back("assets/terrain_textures/IMGP5525_seamless.jpg");
+    TextureFilenames.push_back("assets/terrain_textures/IMGP5487_seamless.jpg");
+    TextureFilenames.push_back("assets/terrain_textures/tilable-IMG_0044-verydark.png");
+    TextureFilenames.push_back("assets/terrain_textures/water.png");
+
+    m_terrain.InitTerrain(WorldScale, TextureScale, TextureFilenames);
+
+    int Size = 512;
+    float Roughness = 1.0f;
+    float MinHeight = 0.0f;
+    float MaxHeight = 256.0f;
+
+    m_terrain.CreateMidpointDisplacement(Size, Roughness, MinHeight, MaxHeight);
 }
 
 void AppTerrain::InitGUI()
 {
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
+    ImGuiIO &io = ImGui::GetIO();
     (void)io;
 
     ImGui::StyleColorsDark();
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    const char* glsl_version = "#version 130";
+    const char *glsl_version = "#version 130";
     ImGui_ImplOpenGL3_Init(glsl_version);
 }

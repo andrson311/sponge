@@ -8,7 +8,7 @@
 #include "util.h"
 #include "camera.h"
 #include "glfw.h"
-#include "terrain.h"
+#include "fault_formation_terrain.h"
 
 class AppTerrain
 {
@@ -34,5 +34,5 @@ private:
     GLFWwindow* window = NULL;
     Camera* m_pGameCamera = NULL;
     bool m_isWireframe = false;
-    BaseTerrain m_terrain;
+    FaultFormationTerrain m_terrain;
 };

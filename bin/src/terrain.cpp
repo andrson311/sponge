@@ -1,5 +1,16 @@
 #include "terrain.h"
 
+BaseTerrain::~BaseTerrain()
+{
+    Destroy();
+}
+
+void BaseTerrain::Destroy()
+{
+    m_heightMap.Destroy();
+    m_triangleList.Destroy();
+}
+
 void BaseTerrain::InitTerrain(float WorldScale)
 {
     if (!m_terrainTech.Init())

@@ -1,6 +1,29 @@
 #include "traingle_list.h"
 #include "terrain.h"
 
+TriangleList::~TriangleList()
+{
+    Destroy();
+}
+
+void TriangleList::Destroy()
+{
+    if (m_vao > 0)
+    {
+        glDeleteVertexArrays(1, &m_vao);
+    }
+
+    if (m_vb > 0)
+    {
+        glDeleteBuffers(1, &m_vb);
+    }
+
+    if (m_ib > 0)
+    {
+        glDeleteBuffers(1, &m_ib);
+    }
+}
+
 void TriangleList::CreateTriangleList(int Width, int Depth, const BaseTerrain *pTerrain)
 {
     m_width = Width;

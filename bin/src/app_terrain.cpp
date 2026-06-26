@@ -154,7 +154,7 @@ void AppTerrain::InitCallbacks()
 
 void AppTerrain::InitCamera()
 {
-    glm::vec3 Pos(0.0f, 5.0f, 0.0f);
+    glm::vec3 Pos(100.0f, 220.0f, -400.0f);
     glm::vec3 Target(0.0f, 0.0f, 1.0f);
     glm::vec3 Up(0.0f, 1.0f, 0.0f);
 
@@ -169,11 +169,20 @@ void AppTerrain::InitCamera()
         zFar};
 
     m_pGameCamera = new Camera(persProjInfo, Pos, Target, Up);
+    m_pGameCamera->SetSpeed(2.0f);
 }
 
 void AppTerrain::InitTerrain()
 {
     float WorldScale = 4.0f;
     m_terrain.InitTerrain(WorldScale);
-    m_terrain.LoadFromFile("assets/heightmaps/heightmap.save");
+    
+    //m_terrain.LoadFromFile("assets/heightmaps/heightmap.save");
+
+    int Size = 256;
+    int Iterations = 500;
+    float MinHeight = 0.0f;
+    float MaxHeight = 300.0f;
+    float Filter = 0.5f;
+    m_terrain.CreateFaultFormation(Size, Iterations, MinHeight, MaxHeight, Filter);
 }

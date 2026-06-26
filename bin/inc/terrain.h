@@ -9,7 +9,9 @@ class BaseTerrain
 {
 public:
     BaseTerrain() {}
+    ~BaseTerrain();
 
+    void Destroy();
     void InitTerrain(float WorldScale);
     void Render(const Camera &Camera);
     void LoadFromFile(const char *pFilename);
@@ -25,4 +27,6 @@ protected:
     Array2D<float> m_heightMap;
     TriangleList m_triangleList;
     TerrainTechnique m_terrainTech;
+    float m_minHeight = 0.0f;
+    float m_maxHeight = 0.0f;
 };

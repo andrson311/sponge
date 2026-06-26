@@ -1,5 +1,9 @@
 #pragma once
 
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -9,6 +13,7 @@
 #include "camera.h"
 #include "glfw.h"
 #include "fault_formation_terrain.h"
+#include "midpoint_disp_terrain.h"
 
 class AppTerrain
 {
@@ -30,9 +35,11 @@ private:
     void InitCallbacks();
     void InitCamera();
     void InitTerrain();
+    void InitGUI();
 
     GLFWwindow* window = NULL;
     Camera* m_pGameCamera = NULL;
     bool m_isWireframe = false;
-    FaultFormationTerrain m_terrain;
+    MidpointDispTerrain m_terrain;
+    bool m_showGui = false;
 };

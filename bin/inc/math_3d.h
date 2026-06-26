@@ -77,3 +77,7 @@ public:
     void CalcAABB(AABB &aabb);
     void Print();
 };
+
+int CalcNextPowerOfTwo(int x);
+float RandomFloat();
+float RandomFloatRange(float Start, float End);

@@ -49,29 +49,74 @@ void AppTerrain::Init()
     InitCallbacks();
     InitCamera();
     InitTerrain();
+    InitGUI();
 }
 
 void AppTerrain::Run()
 {
     while (!glfwWindowShouldClose(window))
     {
+        glfwPollEvents();
         ProcessHeldKeys();
+
+        if (m_showGui)
+        {
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+
+            static int Iterations = 100;
+            static float MaxHeight = 200.0f;
+            static float Roughness = 1.5f;
+
+            ImGui::Begin("Terrain rendering test");
+
+            ImGui::SliderInt("Iterations", &Iterations, 0, 1000);
+            ImGui::SliderFloat("MaxHeight", &MaxHeight, 0.0f, 1000.0f);
+            ImGui::SliderFloat("Roughness", &Roughness, 0.0f, 5.0f);
+
+            if (ImGui::Button("Generate"))
+            {
+                m_terrain.Destroy();
+                int Size = 256;
+                float MinHeight = 0.0f;
+                m_terrain.CreatMidpointDisplacement(Size, Roughness, MinHeight, MaxHeight);
+            }
+
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::End();
+
+            ImGui::Render();
+            int display_w, display_h;
+            glfwGetFramebufferSize(window, &display_w, &display_h);
+            glViewport(0, 0, display_w, display_h);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        }
+
         RenderScene();
         glfwSwapBuffers(window);
-        glfwPollEvents();
     }
 }
 
 void AppTerrain::RenderScene()
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    if (!m_showGui)
+    {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
+
     m_pGameCamera->OnRender();
     m_terrain.Render(*m_pGameCamera);
 }
 
 void AppTerrain::PassiveMouseCB(int x, int y)
 {
-    m_pGameCamera->OnMouse(x, y);
+    if (!m_showGui)
+    {
+        m_pGameCamera->OnMouse(x, y);
+    }
 }
 
 void AppTerrain::KeyboardCB(u_int key, int state)
@@ -98,11 +143,14 @@ void AppTerrain::KeyboardCB(u_int key, int state)
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             }
             break;
+
+        case GLFW_KEY_SPACE:
+            m_showGui = !m_showGui;
+            break;
         }
 
         m_pGameCamera->OnKeyboard(key);
     }
-
 }
 
 void AppTerrain::ProcessHeldKeys()
@@ -176,13 +224,26 @@ void AppTerrain::InitTerrain()
 {
     float WorldScale = 4.0f;
     m_terrain.InitTerrain(WorldScale);
-    
-    //m_terrain.LoadFromFile("assets/heightmaps/heightmap.save");
 
-    int Size = 256;
-    int Iterations = 500;
+    // m_terrain.LoadFromFile("assets/heightmaps/heightmap.save");
+
+    int Size = 512;
+    float Roughness = 1.0f;
     float MinHeight = 0.0f;
-    float MaxHeight = 300.0f;
-    float Filter = 0.5f;
-    m_terrain.CreateFaultFormation(Size, Iterations, MinHeight, MaxHeight, Filter);
+    float MaxHeight = 250.0f;
+
+    m_terrain.CreatMidpointDisplacement(Size, Roughness, MinHeight, MaxHeight);
+}
+
+void AppTerrain::InitGUI()
+{
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    (void)io;
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    const char* glsl_version = "#version 130";
+    ImGui_ImplOpenGL3_Init(glsl_version);
 }

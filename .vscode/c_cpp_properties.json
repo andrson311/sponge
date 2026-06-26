@@ -3,7 +3,11 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/3rdparty/ImGUI"
+            ],
+            "defines": [
+                "IMGUI_IMPL_OPENGL_LOADER_GLEW"
             ],
             "compilerPath": "/usr/bin/g++",
             "cStandard": "c17",

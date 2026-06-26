@@ -136,3 +136,45 @@ void CalcTightLightProjection(const glm::mat4 &CameraView,      // in
     view_frustum_in_world_space.CalcAABB(final_aabb);
     final_aabb.UpdateOrthoInfo(orthoProjInfo);
 }
+
+int CalcNextPowerOfTwo(int x)
+{
+    int ret = 1;
+
+    if (x == 1)
+    {
+        return 2;
+    }
+
+    while (ret < x)
+    {
+        ret = ret * 2;
+    }
+
+    return ret;
+}
+
+float RandomFloat()
+{
+    float Max = RAND_MAX;
+    return ((float)random() / Max);
+}
+
+float RandomFloatRange(float Start, float End)
+{
+    if (End == Start)
+    {
+        return Start;
+    }
+
+    if (End < Start)
+    {
+        printf("Invalid random range: (%f, %f)\n", Start, End);
+        exit(0);
+    }
+
+    float Delta = End - Start;
+    float RandomValue = RandomFloat() * Delta + Start;
+
+    return RandomValue;
+}

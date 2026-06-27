@@ -66,15 +66,10 @@ void AppTerrain::Run()
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
 
-            static int Iterations = 100;
-            static float MaxHeight = 256.0f;
-            static float Roughness = 1.0f;
+            ImGui::Begin("Terrain Demo 5"); // Create a window called "Hello, world!" and append into it.
 
-            ImGui::Begin("Terrain Demo 4"); // Create a window called "Hello, world!" and append into it.
-
-            ImGui::SliderInt("Iterations", &Iterations, 0, 1000);
-            ImGui::SliderFloat("MaxHeight", &MaxHeight, 0.0f, 1000.0f);
-            ImGui::SliderFloat("Roughness", &Roughness, 0.0f, 5.0f);
+            ImGui::SliderFloat("Max height", &this->m_maxHeight, 0.0f, 1000.0f);
+            ImGui::SliderFloat("Terrain roughness", &this->m_roughness, 0.0f, 5.0f);
 
             static float Height0 = 64.0f;
             static float Height1 = 128.0f;
@@ -89,9 +84,8 @@ void AppTerrain::Run()
             if (ImGui::Button("Generate"))
             {
                 m_terrain.Destroy();
-                int Size = 512;
-                float MinHeight = 0.0f;
-                m_terrain.CreateMidpointDisplacement(Size, Roughness, MinHeight, MaxHeight);
+                srandom(getpid());
+                m_terrain.CreateMidpointDisplacement(m_terrainSize, m_roughness, m_minHeight, m_maxHeight);
                 m_terrain.SetTextureHeights(Height0, Height1, Height2, Height3);
             }
 
@@ -120,23 +114,25 @@ void AppTerrain::RenderScene()
     }
 
     static float foo = 0.0f;
-    float R = 1100.0f;
-    float S = 512.0f;
+    foo += 0.002f;
 
-    glm::vec3 Pos(S + cosf(foo) * R, 375.0f, S + sinf(foo) * R);
-    m_pGameCamera->SetPosition(Pos);
+    // float R = 1100.0f;
+    // float S = 512.0f;
 
-    glm::vec3 Center(S, Pos.y * 0.60f, S);
-    glm::vec3 Target = Center - Pos;
-    m_pGameCamera->SetTarget(Target);
-    m_pGameCamera->SetUp(0.0f, 1.0f, 0.0f);
+    // glm::vec3 Pos(S + cosf(foo) * R, 375.0f, S + sinf(foo) * R);
+    // m_pGameCamera->SetPosition(Pos);
 
-    if (!m_isPaused)
-    {
-        foo += 0.001f;
-    }
+    // glm::vec3 Center(S, Pos.y * 0.60f, S);
+    // glm::vec3 Target = Center - Pos;
+    // m_pGameCamera->SetTarget(Target);
+    // m_pGameCamera->SetUp(0.0f, 1.0f, 0.0f);
 
-    // m_pGameCamera->OnRender();
+    m_pGameCamera->OnRender();
+
+    float y = std::min(-0.4f, cosf(foo));
+    glm::vec3 LightDir(sinf(foo * 5.0f), y, cosf(foo * 5.0f));
+
+    m_terrain.SetLightDir(LightDir);
     m_terrain.Render(*m_pGameCamera);
 }
 
@@ -235,13 +231,13 @@ void AppTerrain::InitCallbacks()
 
 void AppTerrain::InitCamera()
 {
-    glm::vec3 Pos(100.0f, 220.0f, -400.0f);
-    glm::vec3 Target(0.0f, 0.0f, 1.0f);
+    glm::vec3 Pos(250.0f, 450.0f, -150.0f);
+    glm::vec3 Target(0.0f, -0.25f, 1.0f);
     glm::vec3 Up(0.0f, 1.0f, 0.0f);
 
     float FOV = 45.0f;
     float zNear = 0.1f;
-    float zFar = 2000.0f;
+    float zFar = 5000.0f;
     PersProjInfo persProjInfo = {
         FOV,
         (float)WINDOW_WIDTH,
@@ -311,13 +307,10 @@ void AppTerrain::InitTerrainMultiTextures()
     TextureFilenames.push_back("assets/terrain_textures/water.png");
 
     m_terrain.InitTerrain(WorldScale, TextureScale, TextureFilenames);
-
-    int Size = 512;
-    float Roughness = 1.0f;
-    float MinHeight = 0.0f;
-    float MaxHeight = 256.0f;
-
-    m_terrain.CreateMidpointDisplacement(Size, Roughness, MinHeight, MaxHeight);
+    m_terrain.CreateMidpointDisplacement(m_terrainSize, m_roughness, m_minHeight, m_maxHeight);
+    
+    glm::vec3 LightDir(1.0f, -1.0f, 0.0f);
+    m_terrain.SetLightDir(LightDir);
 }
 
 void AppTerrain::InitGUI()

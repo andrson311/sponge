@@ -26,6 +26,7 @@ public:
     int GetSize() const { return m_terrainSize; }
     void SetTexture(Texture* pTexture) { m_pTextures[0] = pTexture; }
     void SetTextureHeights(float Tex0Height, float Tex1Height, float Tex2Height, float Tex3Height);
+    void SetLightDir(const glm::vec3& Dir) { m_lightDir = Dir; }
 
 protected:
     void LoadHeightMapFile(const char *pFilename);
@@ -44,4 +45,5 @@ private:
     float m_maxHeight = 0.0f;
     TerrainTechnique m_terrainTech;
     SingleTexTerrainTechnique m_singleTexTerrainTech;
+    glm::vec3 m_lightDir;
 };

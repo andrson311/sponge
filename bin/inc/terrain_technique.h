@@ -12,6 +12,7 @@ public:
     void SetVP(const glm::mat4 &VP);
     void SetMinMaxHeight(float Min, float Max);
     void SetTextureHeights(float Tex0Height, float Tex1Height, float Tex2Height, float Tex3Height);
+    void SetLightDir(const glm::vec3& Dir);
 
 private:
     GLuint m_VPLoc = -1;
@@ -27,4 +28,6 @@ private:
     GLuint m_tex1UnitLoc = -1;
     GLuint m_tex2UnitLoc = -1;
     GLuint m_tex3UnitLoc = -1;
+
+    GLuint m_reversedLightDirLoc = -1;
 };

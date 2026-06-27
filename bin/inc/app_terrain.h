@@ -8,6 +8,7 @@
 #include <string.h>
 #include <math.h>
 #include <GL/glew.h>
+#include <unistd.h>
 
 #include "util.h"
 #include "camera.h"
@@ -47,4 +48,9 @@ private:
     MidpointDispTerrain m_terrain;
     bool m_showGui = false;
     bool m_isPaused = false;
+    int m_terrainSize = 512;
+    float m_roughness = 1.0f;
+    float m_minHeight = 0.0f;
+    float m_maxHeight = 356.0f;
+    float m_counter = 0.0f;
 };

@@ -47,10 +47,21 @@ void TriangleList::CreateGLState()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ib);
 
     int POS_LOC = 0;
+    int TEX_LOC = 1;
+    int NORMAL_LOC = 2;
+
     size_t NumFloats = 0;
 
     glEnableVertexAttribArray(POS_LOC);
     glVertexAttribPointer(POS_LOC, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *)(NumFloats * sizeof(float)));
+    NumFloats += 3;
+
+    glEnableVertexAttribArray(TEX_LOC);
+    glVertexAttribPointer(TEX_LOC, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *)(NumFloats * sizeof(float)));
+    NumFloats += 2;
+
+    glEnableVertexAttribArray(NORMAL_LOC);
+    glVertexAttribPointer(NORMAL_LOC, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *)(NumFloats * sizeof(float)));
     NumFloats += 3;
 }
 
@@ -64,6 +75,7 @@ void TriangleList::PopulateBuffers(const BaseTerrain *pTerrain)
     int NumQuads = (m_width - 1) * (m_depth - 1);
     Indices.resize(NumQuads * 6);
     InitIndices(Indices);
+    CalcNormals(Vertices, Indices);
 
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices[0]) * Vertices.size(), &Vertices[0], GL_STATIC_DRAW);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices[0]) * Indices.size(), &Indices[0], GL_STATIC_DRAW);
@@ -75,6 +87,10 @@ void TriangleList::Vertex::InitVertex(const BaseTerrain *pTerrain, int x, int z)
 
     float WorldScale = pTerrain->GetWorldScale();
     Pos = glm::vec3(x * WorldScale, y, z * WorldScale);
+
+    float Size = (float)pTerrain->GetSize();
+    float TextureScale = pTerrain->GetTextureScale();
+    Tex = glm::vec2(TextureScale * (float)x / Size, TextureScale * (float)z / Size);
 }
 
 void TriangleList::InitVertices(const BaseTerrain *pTerrain, std::vector<Vertex> &Vertices)
@@ -126,6 +142,31 @@ void TriangleList::InitIndices(std::vector<u_int> &Indices)
     }
 
     assert(Index == Indices.size());
+}
+
+void TriangleList::CalcNormals(std::vector<Vertex> &Vertices, std::vector<u_int> &Indices)
+{
+    u_int Index = 0;
+
+    for (u_int i = 0; i < Indices.size(); i += 3)
+    {
+        u_int Index0 = Indices[i];
+        u_int Index1 = Indices[i + 1];
+        u_int Index2 = Indices[i + 2];
+
+        glm::vec3 v1 = Vertices[Index1].Pos - Vertices[Index0].Pos;
+        glm::vec3 v2 = Vertices[Index2].Pos - Vertices[Index0].Pos;
+        glm::vec3 Normal = glm::normalize(glm::cross(v1, v2));
+
+        Vertices[Index0].Normal += Normal;
+        Vertices[Index1].Normal += Normal;
+        Vertices[Index2].Normal += Normal;
+    }
+
+    for (u_int i = 0; i < Vertices.size(); i++)
+    {
+        Vertices[i].Normal = glm::normalize(Vertices[i].Normal);
+    }
 }
 
 void TriangleList::Render()

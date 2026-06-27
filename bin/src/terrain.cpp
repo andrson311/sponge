@@ -144,6 +144,7 @@ void BaseTerrain::Render(const Camera &Camera)
         }
     }
 
+    m_terrainTech.SetLightDir(m_lightDir);
     m_triangleList.Render();
 }
 

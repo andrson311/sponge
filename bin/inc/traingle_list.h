@@ -21,7 +21,8 @@ private:
     {
         glm::vec3 Pos;
         glm::vec2 Tex;
-        glm::vec3 Normal = glm::vec3(0.0f);
+        float LightFactor;
+        // glm::vec3 Normal = glm::vec3(0.0f);
 
         void InitVertex(const BaseTerrain *pTerrain, int x, int z);
     };
@@ -31,11 +32,11 @@ private:
     void PopulateBuffers(const BaseTerrain *pTerrain);
     void InitVertices(const BaseTerrain *pTerrain, std::vector<Vertex> &Vertices);
     void InitIndices(std::vector<u_int> &Indices);
-    void CalcNormals(std::vector<Vertex>& Vertices, std::vector<u_int>& Indices);
+    // void CalcNormals(std::vector<Vertex>& Vertices, std::vector<u_int>& Indices);
 
     int m_width = 0;
     int m_depth = 0;
-    GLuint m_vao;
-    GLuint m_vb;
-    GLuint m_ib;
+    GLuint m_vao = 0;
+    GLuint m_vb = 0;
+    GLuint m_ib = 0;
 };

@@ -70,6 +70,7 @@ void AppTerrain::Run()
 
             ImGui::SliderFloat("Max height", &this->m_maxHeight, 0.0f, 1000.0f);
             ImGui::SliderFloat("Terrain roughness", &this->m_roughness, 0.0f, 5.0f);
+            ImGui::SliderFloat("Light Softness", &this->m_lightSoftness, 0.0f, 50.0f);
 
             static float Height0 = 64.0f;
             static float Height1 = 128.0f;
@@ -85,6 +86,7 @@ void AppTerrain::Run()
             {
                 m_terrain.Destroy();
                 srandom(getpid());
+                m_terrain.SetLight(m_lightDir, m_lightSoftness);
                 m_terrain.CreateMidpointDisplacement(m_terrainSize, m_roughness, m_minHeight, m_maxHeight);
                 m_terrain.SetTextureHeights(Height0, Height1, Height2, Height3);
             }
@@ -113,8 +115,8 @@ void AppTerrain::RenderScene()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    static float foo = 0.0f;
-    foo += 0.002f;
+    // static float foo = 0.0f;
+    // foo += 0.002f;
 
     // float R = 1100.0f;
     // float S = 512.0f;
@@ -129,10 +131,10 @@ void AppTerrain::RenderScene()
 
     m_pGameCamera->OnRender();
 
-    float y = std::min(-0.4f, cosf(foo));
-    glm::vec3 LightDir(sinf(foo * 5.0f), y, cosf(foo * 5.0f));
+    // float y = std::min(-0.4f, cosf(foo));
+    // glm::vec3 LightDir(sinf(foo * 5.0f), y, cosf(foo * 5.0f));
 
-    m_terrain.SetLightDir(LightDir);
+    // m_terrain.SetLightDir(LightDir);
     m_terrain.Render(*m_pGameCamera);
 }
 
@@ -175,6 +177,16 @@ void AppTerrain::KeyboardCB(u_int key, int state)
 
         case GLFW_KEY_SPACE:
             m_showGui = !m_showGui;
+            break;
+        
+            case GLFW_KEY_L:
+            m_terrain.Destroy();
+            srandom(getpid());
+            m_counter += 0.1f;
+            m_lightDir.x = sinf(m_counter);
+            m_lightDir.z = cosf(m_counter);
+            m_terrain.SetLight(m_lightDir, m_lightSoftness);
+            m_terrain.CreateMidpointDisplacement(m_terrainSize, m_roughness, m_minHeight, m_maxHeight);
             break;
         }
     }
@@ -231,8 +243,8 @@ void AppTerrain::InitCallbacks()
 
 void AppTerrain::InitCamera()
 {
-    glm::vec3 Pos(250.0f, 450.0f, -150.0f);
-    glm::vec3 Target(0.0f, -0.25f, 1.0f);
+    glm::vec3 Pos(545.0f, 550.0f, -600.0f);
+    glm::vec3 Target(-0.1f, -0.4f, 0.9f);
     glm::vec3 Up(0.0f, 1.0f, 0.0f);
 
     float FOV = 45.0f;
@@ -306,11 +318,11 @@ void AppTerrain::InitTerrainMultiTextures()
     TextureFilenames.push_back("assets/terrain_textures/tilable-IMG_0044-verydark.png");
     TextureFilenames.push_back("assets/terrain_textures/water.png");
 
-    m_terrain.InitTerrain(WorldScale, TextureScale, TextureFilenames);
+    m_terrain.InitTerrain(WorldScale, TextureScale, TextureFilenames, m_lightDir, m_lightSoftness);
     m_terrain.CreateMidpointDisplacement(m_terrainSize, m_roughness, m_minHeight, m_maxHeight);
-    
-    glm::vec3 LightDir(1.0f, -1.0f, 0.0f);
-    m_terrain.SetLightDir(LightDir);
+
+    // glm::vec3 LightDir(1.0f, -1.0f, 0.0f);
+    // m_terrain.SetLightDir(LightDir);
 }
 
 void AppTerrain::InitGUI()

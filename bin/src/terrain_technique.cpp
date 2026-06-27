@@ -8,12 +8,14 @@ bool TerrainTechnique::Init()
         return false;
     }
 
-    if (!AddShader(GL_VERTEX_SHADER, "bin/shaders/terrain.vs"))
+    // if (!AddShader(GL_VERTEX_SHADER, "bin/shaders/terrain.vs"))
+    if (!AddShader(GL_VERTEX_SHADER, "bin/shaders/terrain_slope_lighting.vs"))
     {
         return false;
     }
 
-    if (!AddShader(GL_FRAGMENT_SHADER, "bin/shaders/terrain.fs"))
+    // if (!AddShader(GL_FRAGMENT_SHADER, "bin/shaders/terrain.fs"))
+    if (!AddShader(GL_FRAGMENT_SHADER, "bin/shaders/terrain_slope_lighting.fs"))
     {
         return false;
     }
@@ -24,8 +26,8 @@ bool TerrainTechnique::Init()
     }
 
     m_VPLoc = GetUniformLocation("gVP");
-    m_minHeightLoc = GetUniformLocation("gMinHeight");
-    m_maxHeightLoc = GetUniformLocation("gMaxHeight");
+    // m_minHeightLoc = GetUniformLocation("gMinHeight");
+    // m_maxHeightLoc = GetUniformLocation("gMaxHeight");
 
     m_tex0UnitLoc = GetUniformLocation("gTextureHeight0");
     m_tex1UnitLoc = GetUniformLocation("gTextureHeight1");
@@ -37,11 +39,11 @@ bool TerrainTechnique::Init()
     m_tex2HeightLoc = GetUniformLocation("gHeight2");
     m_tex3HeightLoc = GetUniformLocation("gHeight3");
 
-    m_reversedLightDirLoc = GetUniformLocation("gReversedLightDir");
+    // m_reversedLightDirLoc = GetUniformLocation("gReversedLightDir");
 
     if (m_VPLoc == INVALID_UNIFORM_LOCATION ||
-        m_minHeightLoc == INVALID_UNIFORM_LOCATION ||
-        m_maxHeightLoc == INVALID_UNIFORM_LOCATION ||
+        // m_minHeightLoc == INVALID_UNIFORM_LOCATION ||
+        // m_maxHeightLoc == INVALID_UNIFORM_LOCATION ||
         m_tex0UnitLoc == INVALID_UNIFORM_LOCATION ||
         m_tex1UnitLoc == INVALID_UNIFORM_LOCATION ||
         m_tex2UnitLoc == INVALID_UNIFORM_LOCATION ||
@@ -49,8 +51,8 @@ bool TerrainTechnique::Init()
         m_tex0HeightLoc == INVALID_UNIFORM_LOCATION ||
         m_tex1HeightLoc == INVALID_UNIFORM_LOCATION ||
         m_tex2HeightLoc == INVALID_UNIFORM_LOCATION ||
-        m_tex3HeightLoc == INVALID_UNIFORM_LOCATION ||
-        m_reversedLightDirLoc == INVALID_UNIFORM_LOCATION)
+        m_tex3HeightLoc == INVALID_UNIFORM_LOCATION)
+        // m_reversedLightDirLoc == INVALID_UNIFORM_LOCATION)
     {
         return false;
     }

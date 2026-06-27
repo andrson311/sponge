@@ -50,7 +50,9 @@ private:
     bool m_isPaused = false;
     int m_terrainSize = 512;
     float m_roughness = 1.0f;
+    float m_lightSoftness = 4.0f;
     float m_minHeight = 0.0f;
     float m_maxHeight = 356.0f;
+    glm::vec3 m_lightDir = glm::vec3(1.0f, -0.5f, 1.0f);
     float m_counter = 0.0f;
 };

@@ -13,7 +13,12 @@ void BaseTerrain::Destroy()
     m_triangleList.Destroy();
 }
 
-void BaseTerrain::InitTerrain(float WorldScale, float TextureScale, const std::vector<std::string> &TextureFilenames)
+void BaseTerrain::InitTerrain(
+    float WorldScale,
+    float TextureScale,
+    const std::vector<std::string> &TextureFilenames,
+    const glm::vec3 &LightDir,
+    float LightSoftness)
 {
     if (!m_terrainTech.Init())
     {
@@ -30,7 +35,9 @@ void BaseTerrain::InitTerrain(float WorldScale, float TextureScale, const std::v
 
     m_worldScale = WorldScale;
     m_textureScale = TextureScale;
-    m_isSingleTexTerrain = false;
+    // m_isSingleTexTerrain = false;
+    m_lightDir = LightDir;
+    m_lightSoftness = LightSoftness;
 
     for (int i = 0; i < std::size(m_pTextures); i++)
     {
@@ -144,7 +151,7 @@ void BaseTerrain::Render(const Camera &Camera)
         }
     }
 
-    m_terrainTech.SetLightDir(m_lightDir);
+    // m_terrainTech.SetLightDir(m_lightDir);
     m_triangleList.Render();
 }
 
@@ -173,4 +180,21 @@ void BaseTerrain::SetTextureHeights(float Tex0Height, float Tex1Height, float Te
         exit(0);
     }
     m_terrainTech.SetTextureHeights(Tex0Height, Tex1Height, Tex2Height, Tex3Height);
+}
+
+float BaseTerrain::GetSlopeLighting(int x, int z) const
+{
+    return m_slopeLighter.GetLighting(x, z);
+}
+
+void BaseTerrain::SetLight(const glm::vec3 &LightDir, float Softness)
+{
+    m_lightDir = LightDir;
+    m_lightSoftness = Softness;
+}
+
+void BaseTerrain::FinalizeTerrain()
+{
+    m_slopeLighter.InitLighter(m_lightDir, m_terrainSize, m_lightSoftness);
+    m_triangleList.CreateTriangleList(m_terrainSize, m_terrainSize, this);
 }

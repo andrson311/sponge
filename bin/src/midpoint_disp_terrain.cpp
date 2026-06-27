@@ -17,7 +17,9 @@ void MidpointDispTerrain::CreateMidpointDisplacement(int TerrainSize, float Roug
 
     m_heightMap.Normalize(MinHeight, MaxHeight);
 
-    m_triangleList.CreateTriangleList(m_terrainSize, m_terrainSize, this);
+    //m_triangleList.CreateTriangleList(m_terrainSize, m_terrainSize, this);
+
+    FinalizeTerrain();
 }
 
 void MidpointDispTerrain::CreateMidpointDisplacementF32(float Roughness)

@@ -1,5 +1,6 @@
 #include "app_terrain.h"
 
+
 static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
     (void)scancode;

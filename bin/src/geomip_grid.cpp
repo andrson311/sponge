@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "geomip_grid.h"
 #include "terrain.h"
 
@@ -57,6 +58,13 @@ void GeomipGrid::CreateGeomipGrid(int Width, int Depth, int PatchSize, const Bas
     m_depth = Depth;
     m_patchSize = PatchSize;
 
+    m_numPatchesX = (Width - 1) / (PatchSize - 1);
+    m_numPatchesZ = (Depth - 1) / (PatchSize - 1);
+
+    float WorldScale = pTerrain->GetWorldScale();
+    m_maxLOD = m_lodManager.InitLODManager(PatchSize, m_numPatchesX, m_numPatchesZ, WorldScale);
+    m_lodInfo.resize(m_maxLOD + 1);
+
     CreateGLState();
     PopulateBuffers(pTerrain);
 
@@ -100,15 +108,32 @@ void GeomipGrid::PopulateBuffers(const BaseTerrain *pTerrain)
     Vertices.resize(m_width * m_depth);
     InitVertices(pTerrain, Vertices);
 
+    int NumIndices = CalcNumIndices();
     std::vector<u_int> Indices;
-    int NumQuads = (m_patchSize - 1) * (m_patchSize - 1);
-    Indices.resize(NumQuads * 6);
-    InitIndices(Indices);
+    Indices.resize(NumIndices);
+    NumIndices = InitIndices(Indices);
 
     CalcNormals(Vertices, Indices);
 
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices[0]) * Vertices.size(), &Vertices[0], GL_STATIC_DRAW);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices[0]) * Indices.size(), &Indices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices[0]) * NumIndices, &Indices[0], GL_STATIC_DRAW);
+}
+
+int GeomipGrid::CalcNumIndices()
+{
+    int NumQuads = (m_patchSize - 1) * (m_patchSize - 1);
+    int NumIndices = 0;
+    int MaxPermutationsPerLevel = 16;
+    const int IndicesPerQuad = 6;
+    for (int lod = 0; lod <= m_maxLOD; lod++)
+    {
+        printf("LOD %d: num quads %d\n", lod, NumQuads);
+        NumIndices += NumQuads * IndicesPerQuad * MaxPermutationsPerLevel;
+        NumQuads /= 4;
+    }
+
+    printf("Initial number of indices %d\n", NumIndices);
+    return NumIndices;
 }
 
 void GeomipGrid::Vertex::InitVertex(const BaseTerrain *pTerrain, int x, int z)
@@ -140,51 +165,137 @@ void GeomipGrid::InitVertices(const BaseTerrain *pTerrain, std::vector<Vertex> &
     assert(Index == Vertices.size());
 }
 
-void GeomipGrid::InitIndices(std::vector<u_int> &Indices)
+int GeomipGrid::InitIndices(std::vector<u_int> &Indices)
 {
     int Index = 0;
 
-    for (int z = 0; z < m_patchSize - 1; z += 2)
+    for (int lod = 0; lod <= m_maxLOD; lod++)
     {
-        for (int x = 0; x < m_patchSize - 1; x += 2)
+        Index = InitIndicesLOD(Index, Indices, lod);
+    }
+
+    return Index;
+}
+
+int GeomipGrid::InitIndicesLOD(int Index, std::vector<u_int> &Indices, int lod)
+{
+    int TotalIndicesForLOD = 0;
+
+    for (int l = 0; l < LEFT; l++)
+    {
+        for (int r = 0; r < RIGHT; r++)
         {
-            u_int IndexCenter = (z + 1) * m_width + x + 1;
-            u_int IndexTemp1 = z * m_width + x;
-            u_int IndexTemp2 = (z + 1) * m_width + x;
+            for (int t = 0; t < TOP; t++)
+            {
+                for (int b = 0; b < BOTTOM; b++)
+                {
+                    m_lodInfo[lod].info[l][r][t][b].Start = Index;
+                    Index = InitIndicesLODSingle(Index, Indices, lod, lod + l, lod + r, lod + t, lod + b);
 
-            Index = AddTriangle(Index, Indices, IndexCenter, IndexTemp1, IndexTemp2);
-            IndexTemp1 = IndexTemp2;
-            IndexTemp2 += m_width;
-
-            Index = AddTriangle(Index, Indices, IndexCenter, IndexTemp1, IndexTemp2);
-            IndexTemp1 = IndexTemp2;
-            IndexTemp2++;
-
-            Index = AddTriangle(Index, Indices, IndexCenter, IndexTemp1, IndexTemp2);
-            IndexTemp1 = IndexTemp2;
-            IndexTemp2++;
-
-            Index = AddTriangle(Index, Indices, IndexCenter, IndexTemp1, IndexTemp2);
-            IndexTemp1 = IndexTemp2;
-            IndexTemp2 -= m_width;
-
-            Index = AddTriangle(Index, Indices, IndexCenter, IndexTemp1, IndexTemp2);
-            IndexTemp1 = IndexTemp2;
-            IndexTemp2 -= m_width;
-
-            Index = AddTriangle(Index, Indices, IndexCenter, IndexTemp1, IndexTemp2);
-            IndexTemp1 = IndexTemp2;
-            IndexTemp2--;
-
-            Index = AddTriangle(Index, Indices, IndexCenter, IndexTemp1, IndexTemp2);
-            IndexTemp1 = IndexTemp2;
-            IndexTemp2--;
-
-            Index = AddTriangle(Index, Indices, IndexCenter, IndexTemp1, IndexTemp2);
+                    m_lodInfo[lod].info[l][r][t][b].Count = Index - m_lodInfo[lod].info[l][r][t][b].Start;
+                    TotalIndicesForLOD += m_lodInfo[lod].info[l][r][t][b].Count;
+                }
+            }
         }
     }
 
-    assert(Index == Indices.size());
+    return Index;
+}
+
+int GeomipGrid::InitIndicesLODSingle(int Index, std::vector<u_int> &Indices,
+                                     int lodCore, int lodLeft, int lodRight, int lodTop, int lodBottom)
+{
+    int FanStep = (int)powf(2.0f, (float)(lodCore + 1));
+    int EndPos = m_patchSize - 1 - FanStep;
+
+    for (int z = 0; z <= EndPos; z += FanStep)
+    {
+        for (int x = 0; x <= EndPos; x += FanStep)
+        {
+            int lLeft = x == 0 ? lodLeft : lodCore;
+            int lRight = x == EndPos ? lodRight : lodCore;
+            int lBottom = z == 0 ? lodBottom : lodCore;
+            int lTop = z == EndPos ? lodTop : lodCore;
+
+            Index = CreateTriangleFan(Index, Indices, lodCore, lLeft, lRight, lTop, lBottom, x, z);
+        }
+    }
+
+    return Index;
+}
+
+u_int GeomipGrid::CreateTriangleFan(int Index, std::vector<u_int> &Indices,
+                                    int lodCore, int lodLeft, int lodRight, int lodTop, int lodBottom, int x, int z)
+{
+    int StepLeft = (int)powf(2.0f, (float)lodLeft);
+    int StepRight = (int)powf(2.0f, (float)lodRight);
+    int StepTop = (int)powf(2.0f, (float)lodTop);
+    int StepBottom = (int)powf(2.0f, (float)lodBottom);
+    int StepCenter = (int)powf(2.0f, (float)lodCore);
+
+    u_int IndexCenter = (z + StepCenter) * m_width + x + StepCenter;
+
+    // first up
+    u_int IndexTemp1 = z * m_width + x;
+    u_int IndexTemp2 = (z + StepLeft) * m_width + x;
+
+    Index = AddTriangle(Index, Indices, IndexCenter, IndexTemp1, IndexTemp2);
+
+    // second up
+    if (lodLeft == lodCore)
+    {
+        IndexTemp1 = IndexTemp2;
+        IndexTemp2 += StepLeft * m_width;
+
+        Index = AddTriangle(Index, Indices, IndexCenter, IndexTemp1, IndexTemp2);
+    }
+
+    // first right
+    IndexTemp1 = IndexTemp2;
+    IndexTemp2 += StepTop;
+
+    Index = AddTriangle(Index, Indices, IndexCenter, IndexTemp1, IndexTemp2);
+
+    // second right
+    if (lodTop == lodCore)
+    {
+        IndexTemp1 = IndexTemp2;
+        IndexTemp2 += StepTop;
+
+        Index = AddTriangle(Index, Indices, IndexCenter, IndexTemp1, IndexTemp2);
+    }
+
+    // first down
+    IndexTemp1 = IndexTemp2;
+    IndexTemp2 -= StepRight * m_width;
+
+    Index = AddTriangle(Index, Indices, IndexCenter, IndexTemp1, IndexTemp2);
+
+    // second down
+    if (lodRight == lodCore)
+    {
+        IndexTemp1 = IndexTemp2;
+        IndexTemp2 -= StepRight * m_width;
+
+        Index = AddTriangle(Index, Indices, IndexCenter, IndexTemp1, IndexTemp2);
+    }
+
+    // first left
+    IndexTemp1 = IndexTemp2;
+    IndexTemp2 -= StepBottom;
+
+    Index = AddTriangle(Index, Indices, IndexCenter, IndexTemp1, IndexTemp2);
+
+    // second left
+    if (lodBottom == lodCore)
+    {
+        IndexTemp1 = IndexTemp2;
+        IndexTemp2 -= StepBottom;
+
+        Index = AddTriangle(Index, Indices, IndexCenter, IndexTemp1, IndexTemp2);
+    }
+
+    return Index;
 }
 
 u_int GeomipGrid::AddTriangle(u_int Index, std::vector<u_int> &Indices, u_int v1, u_int v2, u_int v3)
@@ -208,8 +319,9 @@ void GeomipGrid::CalcNormals(std::vector<Vertex> &Vertices, std::vector<u_int> &
         for (int x = 0; x < m_width - 1; x += (m_patchSize - 1))
         {
             int BaseVertex = z * m_width + x;
+            int NumIndices = m_lodInfo[0].info[0][0][0][0].Count;
 
-            for (u_int i = 0; i < Indices.size(); i += 3)
+            for (u_int i = 0; i < NumIndices; i += 3)
             {
                 u_int Index0 = BaseVertex + Indices[i];
                 u_int Index1 = BaseVertex + Indices[i + 1];
@@ -233,16 +345,30 @@ void GeomipGrid::CalcNormals(std::vector<Vertex> &Vertices, std::vector<u_int> &
     }
 }
 
-void GeomipGrid::Render()
+void GeomipGrid::Render(const glm::vec3 &CameraPos)
 {
+    m_lodManager.Update(CameraPos);
     glBindVertexArray(m_vao);
 
-    for (int z = 0; z < m_depth - 1; z += (m_patchSize - 1))
+    for (int PatchZ = 0; PatchZ < m_numPatchesZ; PatchZ++)
     {
-        for (int x = 0; x < m_width - 1; x += (m_patchSize - 1))
+        for (int PatchX = 0; PatchX < m_numPatchesX; PatchX++)
         {
+            const LODManager::PatchLOD &plod = m_lodManager.GetPatchLOD(PatchX, PatchZ);
+            int C = plod.Core;
+            int L = plod.Left;
+            int R = plod.Right;
+            int T = plod.Top;
+            int B = plod.Bottom;
+
+            size_t BaseIndex = sizeof(u_int) * m_lodInfo[C].info[L][R][T][B].Start;
+
+            int z = PatchZ * (m_patchSize - 1);
+            int x = PatchX * (m_patchSize - 1);
             int BaseVertex = z * m_width + x;
-            glDrawElementsBaseVertex(GL_TRIANGLES, (m_patchSize - 1) * (m_patchSize - 1) * 6, GL_UNSIGNED_INT, NULL, BaseVertex);
+
+            glDrawElementsBaseVertex(GL_TRIANGLES, m_lodInfo[C].info[L][R][T][B].Count,
+                                     GL_UNSIGNED_INT, (void *)BaseIndex, BaseVertex);
         }
     }
 

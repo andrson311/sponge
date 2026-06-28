@@ -1,6 +1,6 @@
 #include "midpoint_disp_terrain.h"
 
-void MidpointDispTerrain::CreateMidpointDisplacement(int TerrainSize, float Roughness, float MinHeight, float MaxHeight)
+void MidpointDispTerrain::CreateMidpointDisplacement(int TerrainSize, int PatchSize, float Roughness, float MinHeight, float MaxHeight)
 {
     if (Roughness < 0.0f)
     {
@@ -9,6 +9,8 @@ void MidpointDispTerrain::CreateMidpointDisplacement(int TerrainSize, float Roug
     }
 
     m_terrainSize = TerrainSize;
+    m_patchSize = PatchSize;
+
     SetMinMaxHeight(MinHeight, MaxHeight);
 
     m_heightMap.InitArray2D(TerrainSize, TerrainSize, 0.0f);
@@ -17,9 +19,7 @@ void MidpointDispTerrain::CreateMidpointDisplacement(int TerrainSize, float Roug
 
     m_heightMap.Normalize(MinHeight, MaxHeight);
 
-    //m_triangleList.CreateTriangleList(m_terrainSize, m_terrainSize, this);
-
-    FinalizeTerrain();
+    Finalize();
 }
 
 void MidpointDispTerrain::CreateMidpointDisplacementF32(float Roughness)

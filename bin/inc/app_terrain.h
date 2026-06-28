@@ -13,10 +13,9 @@
 #include "util.h"
 #include "camera.h"
 #include "glfw.h"
-// #include "fault_formation_terrain.h"
-#include "midpoint_disp_terrain.h"
+
 #include "texture_config.h"
-#include "texture_generator.h"
+#include "midpoint_disp_terrain.h"
 
 class AppTerrain
 {
@@ -38,8 +37,6 @@ private:
     void InitCallbacks();
     void InitCamera();
     void InitTerrain();
-    void InitTerrainTextureGenerator();
-    void InitTerrainMultiTextures();
     void InitGUI();
 
     GLFWwindow* window = NULL;
@@ -48,11 +45,10 @@ private:
     MidpointDispTerrain m_terrain;
     bool m_showGui = false;
     bool m_isPaused = false;
-    int m_terrainSize = 512;
+    int m_terrainSize = 513;
     float m_roughness = 1.0f;
-    float m_lightSoftness = 4.0f;
     float m_minHeight = 0.0f;
     float m_maxHeight = 356.0f;
-    glm::vec3 m_lightDir = glm::vec3(1.0f, -0.5f, 1.0f);
+    int m_patchSize = 33;
     float m_counter = 0.0f;
 };

@@ -66,11 +66,10 @@ void AppTerrain::Run()
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
 
-            ImGui::Begin("Terrain Demo 5"); // Create a window called "Hello, world!" and append into it.
+            ImGui::Begin("Terrain demo - geomipmap grid");
 
-            ImGui::SliderFloat("Max height", &this->m_maxHeight, 0.0f, 1000.0f);
+            ImGui::SliderFloat("Max Height", &this->m_maxHeight, 0.0f, 1000.0f);
             ImGui::SliderFloat("Terrain roughness", &this->m_roughness, 0.0f, 5.0f);
-            ImGui::SliderFloat("Light Softness", &this->m_lightSoftness, 0.0f, 50.0f);
 
             static float Height0 = 64.0f;
             static float Height1 = 128.0f;
@@ -86,8 +85,7 @@ void AppTerrain::Run()
             {
                 m_terrain.Destroy();
                 srandom(getpid());
-                m_terrain.SetLight(m_lightDir, m_lightSoftness);
-                m_terrain.CreateMidpointDisplacement(m_terrainSize, m_roughness, m_minHeight, m_maxHeight);
+                m_terrain.CreateMidpointDisplacement(m_terrainSize, m_patchSize, m_roughness, m_minHeight, m_maxHeight);
                 m_terrain.SetTextureHeights(Height0, Height1, Height2, Height3);
             }
 
@@ -115,8 +113,8 @@ void AppTerrain::RenderScene()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    // static float foo = 0.0f;
-    // foo += 0.002f;
+    static float foo = 0.0f;
+    foo += 0.002f;
 
     // float R = 1100.0f;
     // float S = 512.0f;
@@ -131,10 +129,10 @@ void AppTerrain::RenderScene()
 
     m_pGameCamera->OnRender();
 
-    // float y = std::min(-0.4f, cosf(foo));
-    // glm::vec3 LightDir(sinf(foo * 5.0f), y, cosf(foo * 5.0f));
+    float y = std::min(-0.4f, cosf(foo));
+    glm::vec3 LightDir(sinf(foo * 5.0f), y, cosf(foo * 5.0f));
 
-    // m_terrain.SetLightDir(LightDir);
+    m_terrain.SetLightDir(LightDir);
     m_terrain.Render(*m_pGameCamera);
 }
 
@@ -177,16 +175,6 @@ void AppTerrain::KeyboardCB(u_int key, int state)
 
         case GLFW_KEY_SPACE:
             m_showGui = !m_showGui;
-            break;
-        
-            case GLFW_KEY_L:
-            m_terrain.Destroy();
-            srandom(getpid());
-            m_counter += 0.1f;
-            m_lightDir.x = sinf(m_counter);
-            m_lightDir.z = cosf(m_counter);
-            m_terrain.SetLight(m_lightDir, m_lightSoftness);
-            m_terrain.CreateMidpointDisplacement(m_terrainSize, m_roughness, m_minHeight, m_maxHeight);
             break;
         }
     }
@@ -261,55 +249,9 @@ void AppTerrain::InitCamera()
     m_pGameCamera->SetSpeed(2.0f);
 }
 
-// #define USE_TEXTURE_GENERATOR
-
 void AppTerrain::InitTerrain()
 {
-#ifdef USE_TEXTURE_GENERATOR
-    InitTerrainTextureGenerator();
-#else
-    InitTerrainMultiTextures();
-#endif
-    m_terrain.SaveToFile("heightmap.png");
-}
-
-void AppTerrain::InitTerrainTextureGenerator()
-{
-    float WorldScale = 1.0f;
-    float TextureScale = 10.0f;
-
-    m_terrain.InitTerrain(WorldScale, TextureScale);
-
-    int Size = 512;
-    float Roughness = 1.0f;
-    float MinHeight = 0.0f;
-    float MaxHeight = 156.0f;
-
-    m_terrain.CreateMidpointDisplacement(Size, Roughness, MinHeight, MaxHeight);
-
-    TextureGenerator TexGen;
-
-    TexGen.LoadTile("assets/terrain_textures/rock02_2.jpg");
-    // TexGen.LoadTile("assets/terrain_textures/IMGP5487_seamless.jpg");
-    // TexGen.LoadTile("assets/terrain_textures/IMGP5525_seamless.jpg");
-    TexGen.LoadTile("assets/terrain_textures/rock01.jpg");
-
-    TexGen.LoadTile("assets/terrain_textures/tilable-IMG_0044-verydark.png");
-
-    // TexGen.LoadTile("assets/terrain_textures/grass1.jpg");
-    // TexGen.LoadTile("assets/terrain_textures/Rock6.png");
-
-    TexGen.LoadTile("assets/terrain_textures/water.png");
-    int TextureSize = 1024;
-
-    Texture *pTexture = TexGen.GenerateTexture(TextureSize, &m_terrain, MinHeight, MaxHeight);
-    m_terrain.SetTexture(pTexture);
-}
-
-void AppTerrain::InitTerrainMultiTextures()
-{
     float WorldScale = 2.0f;
-
     float TextureScale = 4.0f;
 
     std::vector<std::string> TextureFilenames;
@@ -318,11 +260,13 @@ void AppTerrain::InitTerrainMultiTextures()
     TextureFilenames.push_back("assets/terrain_textures/tilable-IMG_0044-verydark.png");
     TextureFilenames.push_back("assets/terrain_textures/water.png");
 
-    m_terrain.InitTerrain(WorldScale, TextureScale, TextureFilenames, m_lightDir, m_lightSoftness);
-    m_terrain.CreateMidpointDisplacement(m_terrainSize, m_roughness, m_minHeight, m_maxHeight);
+    m_terrain.InitTerrain(WorldScale, TextureScale, TextureFilenames);
+    m_terrain.CreateMidpointDisplacement(m_terrainSize, m_patchSize, m_roughness, m_minHeight, m_maxHeight);
 
-    // glm::vec3 LightDir(1.0f, -1.0f, 0.0f);
-    // m_terrain.SetLightDir(LightDir);
+    printf("Patch size: %d", m_patchSize);
+
+    glm::vec3 LightDir(1.0f, -1.0f, 0.0f);
+    m_terrain.SetLightDir(LightDir);
 }
 
 void AppTerrain::InitGUI()

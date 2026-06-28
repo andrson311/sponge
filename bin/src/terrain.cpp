@@ -10,15 +10,10 @@ BaseTerrain::~BaseTerrain()
 void BaseTerrain::Destroy()
 {
     m_heightMap.Destroy();
-    m_triangleList.Destroy();
+    m_geomipGrid.Destroy();
 }
 
-void BaseTerrain::InitTerrain(
-    float WorldScale,
-    float TextureScale,
-    const std::vector<std::string> &TextureFilenames,
-    const glm::vec3 &LightDir,
-    float LightSoftness)
+void BaseTerrain::InitTerrain(float WorldScale, float TextureScale, const std::vector<std::string> &TextureFilenames)
 {
     if (!m_terrainTech.Init())
     {
@@ -35,9 +30,6 @@ void BaseTerrain::InitTerrain(
 
     m_worldScale = WorldScale;
     m_textureScale = TextureScale;
-    // m_isSingleTexTerrain = false;
-    m_lightDir = LightDir;
-    m_lightSoftness = LightSoftness;
 
     for (int i = 0; i < std::size(m_pTextures); i++)
     {
@@ -46,17 +38,9 @@ void BaseTerrain::InitTerrain(
     }
 }
 
-void BaseTerrain::InitTerrain(float WorldScale, float TextureScale)
+void BaseTerrain::Finalize()
 {
-    if (!m_terrainTech.Init())
-    {
-        printf("Error initializing terrain tech\n");
-        exit(0);
-    }
-
-    m_worldScale = WorldScale;
-    m_textureScale = TextureScale;
-    m_isSingleTexTerrain = true;
+    m_geomipGrid.CreateGeomipGrid(m_terrainSize, m_terrainSize, m_patchSize, this);
 }
 
 float BaseTerrain::GetHeightInterpolated(float x, float z) const
@@ -84,7 +68,10 @@ float BaseTerrain::GetHeightInterpolated(float x, float z) const
 void BaseTerrain::LoadFromFile(const char *pFilename)
 {
     LoadHeightMapFile(pFilename);
-    m_triangleList.CreateTriangleList(m_terrainSize, m_terrainSize, this);
+
+    assert(0);
+
+    m_geomipGrid.CreateGeomipGrid(m_terrainSize, m_terrainSize, m_patchSize, this);
 }
 
 void BaseTerrain::LoadHeightMapFile(const char *pFilename)
@@ -132,16 +119,8 @@ void BaseTerrain::Render(const Camera &Camera)
 {
     glm::mat4 VP = Camera.GetViewProjMatrix();
 
-    if (m_isSingleTexTerrain)
-    {
-        m_singleTexTerrainTech.Enable();
-        m_singleTexTerrainTech.SetVP(VP);
-    }
-    else
-    {
-        m_terrainTech.Enable();
-        m_terrainTech.SetVP(VP);
-    }
+    m_terrainTech.Enable();
+    m_terrainTech.SetVP(VP);
 
     for (int i = 0; i < std::size(m_pTextures); i++)
     {
@@ -151,8 +130,8 @@ void BaseTerrain::Render(const Camera &Camera)
         }
     }
 
-    // m_terrainTech.SetLightDir(m_lightDir);
-    m_triangleList.Render();
+    m_terrainTech.SetLightDir(m_lightDir);
+    m_geomipGrid.Render();
 }
 
 void BaseTerrain::SetMinMaxHeight(float MinHeight, float MaxHeight)
@@ -160,41 +139,12 @@ void BaseTerrain::SetMinMaxHeight(float MinHeight, float MaxHeight)
     m_minHeight = MinHeight;
     m_maxHeight = MaxHeight;
 
-    if (m_isSingleTexTerrain)
-    {
-        m_singleTexTerrainTech.Enable();
-        m_singleTexTerrainTech.SetMinMaxHeight(MinHeight, MaxHeight);
-    }
-    else
-    {
-        m_terrainTech.Enable();
-        m_terrainTech.SetMinMaxHeight(MinHeight, MaxHeight);
-    }
+    m_terrainTech.Enable();
+    m_terrainTech.SetMinMaxHeight(MinHeight, MaxHeight);
 }
 
 void BaseTerrain::SetTextureHeights(float Tex0Height, float Tex1Height, float Tex2Height, float Tex3Height)
 {
-    if (m_isSingleTexTerrain)
-    {
-        printf("%s:%d - only for multi texturing\n", __FILE__, __LINE__);
-        exit(0);
-    }
     m_terrainTech.SetTextureHeights(Tex0Height, Tex1Height, Tex2Height, Tex3Height);
 }
 
-float BaseTerrain::GetSlopeLighting(int x, int z) const
-{
-    return m_slopeLighter.GetLighting(x, z);
-}
-
-void BaseTerrain::SetLight(const glm::vec3 &LightDir, float Softness)
-{
-    m_lightDir = LightDir;
-    m_lightSoftness = Softness;
-}
-
-void BaseTerrain::FinalizeTerrain()
-{
-    m_slopeLighter.InitLighter(m_lightDir, m_terrainSize, m_lightSoftness);
-    m_triangleList.CreateTriangleList(m_terrainSize, m_terrainSize, this);
-}

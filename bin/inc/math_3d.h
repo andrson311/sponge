@@ -3,6 +3,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_access.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 struct PersProjInfo
@@ -79,6 +80,28 @@ public:
     void Print();
 };
 
+class FrustumCulling
+{
+public:
+    FrustumCulling(const glm::mat4 &ViewProj);
+
+    void Update(const glm::mat4 &ViewProj);
+    bool IsPointInsideViewFrustum(const glm::vec3 &p) const;
+
+private:
+    glm::vec4 m_leftClipPlane;
+    glm::vec4 m_rightClipPlane;
+    glm::vec4 m_bottomClipPlane;
+    glm::vec4 m_topClipPlane;
+    glm::vec4 m_nearClipPlane;
+    glm::vec4 m_farClipPlane;
+};
+
 int CalcNextPowerOfTwo(int x);
 float RandomFloat();
 float RandomFloatRange(float Start, float End);
+void CalcClipPlanes(const glm::mat4 &ViewProj,
+                    glm::vec4 &l, glm::vec4 &r,
+                    glm::vec4 &b, glm::vec4 &t,
+                    glm::vec4 &n, glm::vec4 &f);
+bool IsPointInsideViewFrustum(const glm::vec3 &p, const glm::mat4 &VP);

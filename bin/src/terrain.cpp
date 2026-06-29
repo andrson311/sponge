@@ -131,7 +131,7 @@ void BaseTerrain::Render(const Camera &Camera)
     }
 
     m_terrainTech.SetLightDir(m_lightDir);
-    m_geomipGrid.Render(Camera.GetPos());
+    m_geomipGrid.Render(Camera.GetPos(), VP);
 }
 
 void BaseTerrain::SetMinMaxHeight(float MinHeight, float MaxHeight)

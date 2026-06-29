@@ -178,3 +178,64 @@ float RandomFloatRange(float Start, float End)
 
     return RandomValue;
 }
+
+FrustumCulling::FrustumCulling(const glm::mat4 &ViewProj)
+{
+    Update(ViewProj);
+}
+
+void FrustumCulling::Update(const glm::mat4 &ViewProj)
+{
+    CalcClipPlanes(ViewProj,
+                   m_leftClipPlane, m_rightClipPlane,
+                   m_bottomClipPlane, m_topClipPlane,
+                   m_nearClipPlane, m_farClipPlane);
+}
+
+bool FrustumCulling::IsPointInsideViewFrustum(const glm::vec3 &p) const
+{
+    glm::vec4 p4D(p, 1.0f);
+
+    bool Inside =
+        (glm::dot(m_leftClipPlane,   p4D) >= 0) &&
+        (glm::dot(m_rightClipPlane,  p4D) >= 0) &&
+        (glm::dot(m_bottomClipPlane, p4D) >= 0) &&
+        (glm::dot(m_topClipPlane,    p4D) >= 0) &&
+        (glm::dot(m_nearClipPlane,   p4D) >= 0) &&
+        (glm::dot(m_farClipPlane,    p4D) >= 0);
+
+    return Inside;
+}
+
+void CalcClipPlanes(const glm::mat4 &ViewProj,
+                    glm::vec4 &l, glm::vec4 &r,
+                    glm::vec4 &b, glm::vec4 &t,
+                    glm::vec4 &n, glm::vec4 &f)
+{
+    glm::vec4 Row0 = glm::row(ViewProj, 0);
+    glm::vec4 Row1 = glm::row(ViewProj, 1);
+    glm::vec4 Row2 = glm::row(ViewProj, 2);
+    glm::vec4 Row3 = glm::row(ViewProj, 3);
+
+    l = Row3 + Row0;
+    r = Row3 - Row0;
+    b = Row3 + Row1;
+    t = Row3 - Row1;
+    n = Row3 + Row2;
+    f = Row3 - Row2;
+}
+
+bool IsPointInsideViewFrustum(const glm::vec3 &p, const glm::mat4 &VP)
+{
+    glm::vec4 p4D(p, 1.0f);
+    glm::vec4 ClipSpaceP = VP * p4D;
+
+    bool InsideViewFrustum = ((ClipSpaceP.x <= ClipSpaceP.w) &&
+                              (ClipSpaceP.x >= -ClipSpaceP.w) &&
+                              (ClipSpaceP.y <= ClipSpaceP.w) &&
+                              (ClipSpaceP.y >= -ClipSpaceP.w) &&
+                              (ClipSpaceP.z <= ClipSpaceP.w) &&
+                              (ClipSpaceP.z >= -ClipSpaceP.w));
+
+    return InsideViewFrustum;
+}

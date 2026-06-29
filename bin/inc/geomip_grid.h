@@ -14,7 +14,7 @@ public:
 
     void CreateGeomipGrid(int Width, int Depth, int PatchSize, const BaseTerrain *pTerrain);
     void Destroy();
-    void Render(const glm::vec3 &CameraPos);
+    void Render(const glm::vec3 &CameraPos, const glm::mat4 &ViewProj);
 
 private:
     struct Vertex
@@ -27,7 +27,6 @@ private:
     };
 
     void CreateGLState();
-
     void PopulateBuffers(const BaseTerrain *pTerrain);
     void InitVertices(const BaseTerrain *pTerrain, std::vector<Vertex> &Vertices);
     int InitIndices(std::vector<u_int> &Indices);
@@ -42,6 +41,11 @@ private:
 
     int CalcNumIndices();
 
+    // culling
+    bool IsPatchInsideViewFrustum_ViewSpace(int x, int z, const glm::mat4 &ViewProj);
+    bool IsPatchInsideViewFrustum_WorldSpace(int x, int z, const FrustumCulling &FC);
+    bool IsCameraInPatch(const glm::vec3 &CameraPos, int x, int z);
+
     int m_width = 0;
     int m_depth = 0;
     int m_patchSize = 0;
@@ -49,6 +53,7 @@ private:
     GLuint m_vao = 0;
     GLuint m_vb = 0;
     GLuint m_ib = 0;
+    float m_worldScale = 1.0f;
 
     struct SingleLODInfo
     {
@@ -70,4 +75,5 @@ private:
     int m_numPatchesX = 0;
     int m_numPatchesZ = 0;
     LODManager m_lodManager;
+    const BaseTerrain *m_pTerrain = NULL;
 };

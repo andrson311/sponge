@@ -48,7 +48,7 @@ private:
     int m_terrainSize = 513;
     float m_roughness = 1.0f;
     float m_minHeight = 0.0f;
-    float m_maxHeight = 356.0f;
+    float m_maxHeight = 150.0f;
     int m_patchSize = 33;
     float m_counter = 0.0f;
 };

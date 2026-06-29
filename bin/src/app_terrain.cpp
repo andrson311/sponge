@@ -232,8 +232,8 @@ void AppTerrain::InitCallbacks()
 
 void AppTerrain::InitCamera()
 {
-    glm::vec3 Pos(545.0f, 550.0f, -600.0f);
-    glm::vec3 Target(-0.1f, -0.4f, 0.9f);
+    glm::vec3 Pos(0.0f, m_maxHeight + 100.0f, -150.0f);
+    glm::vec3 Target(0.0f, -0.25f, 1.0f);
     glm::vec3 Up(0.0f, 1.0f, 0.0f);
 
     float FOV = 45.0f;

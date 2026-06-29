@@ -197,14 +197,43 @@ bool FrustumCulling::IsPointInsideViewFrustum(const glm::vec3 &p) const
     glm::vec4 p4D(p, 1.0f);
 
     bool Inside =
-        (glm::dot(m_leftClipPlane,   p4D) >= 0) &&
-        (glm::dot(m_rightClipPlane,  p4D) >= 0) &&
+        (glm::dot(m_leftClipPlane, p4D) >= 0) &&
+        (glm::dot(m_rightClipPlane, p4D) >= 0) &&
         (glm::dot(m_bottomClipPlane, p4D) >= 0) &&
-        (glm::dot(m_topClipPlane,    p4D) >= 0) &&
-        (glm::dot(m_nearClipPlane,   p4D) >= 0) &&
-        (glm::dot(m_farClipPlane,    p4D) >= 0);
+        (glm::dot(m_topClipPlane, p4D) >= 0) &&
+        (glm::dot(m_nearClipPlane, p4D) >= 0) &&
+        (glm::dot(m_farClipPlane, p4D) >= 0);
 
     return Inside;
+}
+
+bool FrustumCulling::IsAABBInsideViewFrustum(const glm::vec3 &MinCorner,
+                                             const glm::vec3 &MaxCorner) const
+{
+    const glm::vec4 Planes[6] = {
+        m_leftClipPlane,
+        m_rightClipPlane,
+        m_bottomClipPlane,
+        m_topClipPlane,
+        m_nearClipPlane,
+        m_farClipPlane,
+    };
+
+    for (int i = 0; i < 6; i++)
+    {
+        const glm::vec4 &Plane = Planes[i];
+        glm::vec3 PositiveVertex(
+            (Plane.x >= 0.0f) ? MaxCorner.x : MinCorner.x,
+            (Plane.y >= 0.0f) ? MaxCorner.y : MinCorner.y,
+            (Plane.z >= 0.0f) ? MaxCorner.z : MinCorner.z);
+
+        if (glm::dot(Plane, glm::vec4(PositiveVertex, 1.0f)) < 0.0f)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void CalcClipPlanes(const glm::mat4 &ViewProj,

@@ -87,6 +87,8 @@ public:
 
     void Update(const glm::mat4 &ViewProj);
     bool IsPointInsideViewFrustum(const glm::vec3 &p) const;
+    bool IsAABBInsideViewFrustum(const glm::vec3 &MinCorner,
+                                 const glm::vec3 &MaxCorner) const;
 
 private:
     glm::vec4 m_leftClipPlane;

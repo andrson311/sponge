@@ -362,8 +362,9 @@ void GeomipGrid::Render(const glm::vec3 &CameraPos, const glm::mat4 &ViewProj)
             int x = PatchX * (m_patchSize - 1);
             int z = PatchZ * (m_patchSize - 1);
 
-            //if (!IsPatchInsideViewFrustum_ViewSpace(x, z, ViewProj))
-            if (!IsPatchInsideViewFrustum_WorldSpace(x, z, fc))
+            // if (!IsPatchInsideViewFrustum_ViewSpace(x, z, ViewProj))
+            // if (!IsPatchInsideViewFrustum_WorldSpace(x, z, fc))
+            if (!IsPatchInsideViewFrustum_AABB(x, z, fc))
             {
                 continue;
             }
@@ -459,4 +460,25 @@ bool GeomipGrid::IsCameraInPatch(const glm::vec3 &CameraPos, int x, int z)
                          (CameraPos.z <= z1);
 
     return CameraInPatch;
+}
+
+bool GeomipGrid::IsPatchInsideViewFrustum_AABB(int x, int z, FrustumCulling &fc)
+{
+    int x0 = x;
+    int x1 = x + m_patchSize - 1;
+    int z0 = z;
+    int z1 = z + m_patchSize - 1;
+
+    float h00 = m_pTerrain->GetHeight(x0, z0);
+    float h01 = m_pTerrain->GetHeight(x0, z1);
+    float h10 = m_pTerrain->GetHeight(x1, z0);
+    float h11 = m_pTerrain->GetHeight(x1, z1);
+
+    float MinHeight = std::min(h00, std::min(h01, std::min(h10, h11)));
+    float MaxHeight = std::max(h00, std::max(h01, std::max(h10, h11)));
+
+    glm::vec3 MinCorner((float)x0 * m_worldScale, MinHeight, (float)z0 * m_worldScale);
+    glm::vec3 MaxCorner((float)x1 * m_worldScale, MaxHeight, (float)z1 * m_worldScale);
+
+    return fc.IsAABBInsideViewFrustum(MinCorner, MaxCorner);
 }

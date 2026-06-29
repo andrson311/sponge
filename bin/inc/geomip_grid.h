@@ -44,6 +44,7 @@ private:
     // culling
     bool IsPatchInsideViewFrustum_ViewSpace(int x, int z, const glm::mat4 &ViewProj);
     bool IsPatchInsideViewFrustum_WorldSpace(int x, int z, const FrustumCulling &FC);
+    bool IsPatchInsideViewFrustum_AABB(int x, int z, FrustumCulling &fc);
     bool IsCameraInPatch(const glm::vec3 &CameraPos, int x, int z);
 
     int m_width = 0;

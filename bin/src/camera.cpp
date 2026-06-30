@@ -104,7 +104,7 @@ void Camera::SetTarget(const glm::vec3 &target)
     InitInternal();
 }
 
-void Camera::OnKeyboard(int key)
+bool Camera::OnKeyboard(int key)
 {
     bool CameraChangedPos = false;
 
@@ -181,10 +181,9 @@ void Camera::OnKeyboard(int key)
         }
         printf("Speed decreased to %f\n", m_speed);
         break;
-
-    default:
-        break;
     }
+
+    return CameraChangedPos;
 }
 
 void Camera::OnMouse(int x, int y)

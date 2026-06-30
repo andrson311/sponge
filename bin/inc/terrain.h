@@ -1,12 +1,13 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "camera.h"
 #include "array_2d.h"
 #include "texture.h"
 #include "geomip_grid.h"
 #include "terrain_technique.h"
-#include <string>
-#include <vector>
 
 class BaseTerrain
 {
@@ -27,11 +28,15 @@ public:
     void SetTexture(Texture *pTexture) { m_pTextures[0] = pTexture; }
     void SetTextureHeights(float Tex0Height, float Tex1Height, float Tex2Height, float Tex3Height);
     void SetLightDir(const glm::vec3 &Dir) { m_lightDir = Dir; }
+    float GetMaxHeight() const { return m_maxHeight; }
+    float GetWorldSize() const { return m_terrainSize * m_worldScale; }
+    glm::vec3 ConstrainCameraPosToTerrain(const glm::vec3 &CameraPos);
 
 protected:
     void LoadHeightMapFile(const char *pFilename);
     void SetMinMaxHeight(float MinHeight, float MaxHeight);
     void Finalize();
+    float GetWorldHeight(float x, float z) const;
 
     int m_terrainSize = 0;
     int m_patchSize = 0;
@@ -46,4 +51,5 @@ private:
     float m_maxHeight = 0.0f;
     TerrainTechnique m_terrainTech;
     glm::vec3 m_lightDir;
+    float m_cameraHeight = 2.0f;
 };

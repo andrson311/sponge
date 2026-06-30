@@ -38,6 +38,7 @@ private:
     void InitCamera();
     void InitTerrain();
     void InitGUI();
+    void ConstrainCameraToTerrain();
 
     GLFWwindow* window = NULL;
     Camera* m_pGameCamera = NULL;
@@ -49,6 +50,7 @@ private:
     float m_roughness = 1.0f;
     float m_minHeight = 0.0f;
     float m_maxHeight = 150.0f;
-    int m_patchSize = 33;
+    int m_patchSize = 17;
     float m_counter = 0.0f;
+    bool m_constrainCamera = false;
 };

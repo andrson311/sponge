@@ -29,7 +29,7 @@ public:
         m_up.z = z;
     }
 
-    void OnKeyboard(int key);
+    bool OnKeyboard(int key);
     void OnMouse(int x, int y);
     void UpdateMousePosSilent(int x, int y);
     void OnRender();

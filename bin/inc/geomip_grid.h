@@ -46,6 +46,7 @@ private:
     bool IsPatchInsideViewFrustum_WorldSpace(int x, int z, const FrustumCulling &FC);
     bool IsPatchInsideViewFrustum_AABB(int x, int z, FrustumCulling &fc);
     bool IsCameraInPatch(const glm::vec3 &CameraPos, int x, int z);
+    bool IsCameraCloseToPatch(const glm::vec3& CameraPos, int PatchBaseX, int PatchBaseZ);
 
     int m_width = 0;
     int m_depth = 0;
@@ -77,4 +78,6 @@ private:
     int m_numPatchesZ = 0;
     LODManager m_lodManager;
     const BaseTerrain *m_pTerrain = NULL;
+    float m_patchWorldSize = 0.0f;
+    float m_patchWorldHalfSize = 0.0f;
 };

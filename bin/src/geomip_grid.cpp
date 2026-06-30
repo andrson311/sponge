@@ -45,13 +45,13 @@ void GeomipGrid::CreateGeomipGrid(int Width, int Depth, int PatchSize, const Bas
 
     if (PatchSize < 3)
     {
-        printf("The minimum patch size is 3\n");
+        printf("The minimum patch size is 3 (%d)\n", PatchSize);
         exit(0);
     }
 
     if (PatchSize % 2 == 0)
     {
-        printf("Patch size must be an odd number\n");
+        printf("Patch size must be an odd number (%d)\n", PatchSize);
     }
 
     m_width = Width;
@@ -65,6 +65,9 @@ void GeomipGrid::CreateGeomipGrid(int Width, int Depth, int PatchSize, const Bas
     m_worldScale = pTerrain->GetWorldScale();
     m_maxLOD = m_lodManager.InitLODManager(PatchSize, m_numPatchesX, m_numPatchesZ, m_worldScale);
     m_lodInfo.resize(m_maxLOD + 1);
+
+    m_patchWorldSize = (m_patchSize - 1) * m_worldScale;
+    m_patchWorldHalfSize = m_patchWorldSize / 2.0f;
 
     CreateGLState();
     PopulateBuffers(pTerrain);
@@ -98,6 +101,7 @@ void GeomipGrid::CreateGLState()
     glEnableVertexAttribArray(TEX_LOC);
     glVertexAttribPointer(TEX_LOC, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *)(NumFloats * sizeof(float)));
     NumFloats += 2;
+
     glEnableVertexAttribArray(NORMAL_LOC);
     glVertexAttribPointer(NORMAL_LOC, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void *)(NumFloats * sizeof(float)));
     NumFloats += 3;
@@ -460,6 +464,17 @@ bool GeomipGrid::IsCameraInPatch(const glm::vec3 &CameraPos, int x, int z)
                          (CameraPos.z <= z1);
 
     return CameraInPatch;
+}
+
+bool GeomipGrid::IsCameraCloseToPatch(const glm::vec3 &CameraPos, int PatchBaseX, int PatchBaseZ)
+{
+    glm::vec3 PatchWorldBase(PatchBaseX * m_worldScale, 0.0f, PatchBaseZ * m_worldScale);
+    glm::vec3 PatchWorldCenter = PatchWorldBase + glm::vec3(m_patchWorldHalfSize, 0.0f, m_patchWorldHalfSize);
+    glm::vec3 CameraPosZeroY = glm::vec3(CameraPos.x, 0.0f, CameraPos.z);
+    float CameraToPatchCenter = glm::distance(CameraPosZeroY, PatchWorldCenter);
+
+    bool CameraCloseToPatch = (CameraToPatchCenter <= m_patchWorldSize * 2.0f);
+    return CameraCloseToPatch;
 }
 
 bool GeomipGrid::IsPatchInsideViewFrustum_AABB(int x, int z, FrustumCulling &fc)

@@ -1,6 +1,5 @@
 #include "app_terrain.h"
 
-
 static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
     (void)scancode;
@@ -48,8 +47,8 @@ void AppTerrain::Init()
 {
     CreateWindow();
     InitCallbacks();
-    InitCamera();
     InitTerrain();
+    InitCamera();
     InitGUI();
 }
 
@@ -128,7 +127,7 @@ void AppTerrain::RenderScene()
     // m_pGameCamera->SetTarget(Target);
     // m_pGameCamera->SetUp(0.0f, 1.0f, 0.0f);
 
-    m_pGameCamera->OnRender();
+    // m_pGameCamera->OnRender();
 
     float y = std::min(-0.4f, cosf(foo));
     glm::vec3 LightDir(sinf(foo * 5.0f), y, cosf(foo * 5.0f));
@@ -157,6 +156,11 @@ void AppTerrain::KeyboardCB(u_int key, int state)
             glfwTerminate();
             exit(0);
 
+        case GLFW_KEY_B:
+            m_constrainCamera = !m_constrainCamera;
+            printf("constrain %d\n", m_constrainCamera);
+            break;
+
         case GLFW_KEY_F:
             m_isWireframe = !m_isWireframe;
 
@@ -180,7 +184,11 @@ void AppTerrain::KeyboardCB(u_int key, int state)
         }
     }
 
-    m_pGameCamera->OnKeyboard(key);
+    bool CameraChangedPos = m_pGameCamera->OnKeyboard(key);
+    if (m_constrainCamera && CameraChangedPos)
+    {
+        ConstrainCameraToTerrain();
+    }
 }
 
 void AppTerrain::ProcessHeldKeys()
@@ -206,7 +214,11 @@ void AppTerrain::ProcessHeldKeys()
     {
         if (glfwGetKey(window, key) == GLFW_PRESS)
         {
-            m_pGameCamera->OnKeyboard(key);
+            bool CameraChangedPos = m_pGameCamera->OnKeyboard(key);
+            if (m_constrainCamera && CameraChangedPos)
+            {
+                ConstrainCameraToTerrain();
+            }
         }
     }
 }
@@ -232,7 +244,10 @@ void AppTerrain::InitCallbacks()
 
 void AppTerrain::InitCamera()
 {
-    glm::vec3 Pos(0.0f, m_maxHeight + 100.0f, -150.0f);
+    float CameraX = m_terrain.GetWorldSize() / 2.0f;
+    float CameraZ = CameraX;
+    glm::vec3 Pos(CameraX, 0.0f, CameraZ);
+    Pos = m_terrain.ConstrainCameraPosToTerrain(Pos);
     glm::vec3 Target(0.0f, -0.25f, 1.0f);
     glm::vec3 Up(0.0f, 1.0f, 0.0f);
 
@@ -247,7 +262,7 @@ void AppTerrain::InitCamera()
         zFar};
 
     m_pGameCamera = new Camera(persProjInfo, Pos, Target, Up);
-    m_pGameCamera->SetSpeed(2.0f);
+    m_pGameCamera->SetSpeed(0.5f);
 }
 
 void AppTerrain::InitTerrain()
@@ -281,4 +296,10 @@ void AppTerrain::InitGUI()
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     const char *glsl_version = "#version 130";
     ImGui_ImplOpenGL3_Init(glsl_version);
+}
+
+void AppTerrain::ConstrainCameraToTerrain()
+{
+    glm::vec3 NewCameraPos = m_terrain.ConstrainCameraPosToTerrain(m_pGameCamera->GetPos());
+    m_pGameCamera->SetPosition(NewCameraPos);
 }

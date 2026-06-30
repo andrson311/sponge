@@ -45,22 +45,35 @@ void BaseTerrain::Finalize()
 
 float BaseTerrain::GetHeightInterpolated(float x, float z) const
 {
-    float BaseHeight = GetHeight((int)x, (int)z);
+    float X0Z0Height = GetHeight((int)x, (int)z);
 
     if (((int)x + 1 >= m_terrainSize) || ((int)z + 1 >= m_terrainSize))
     {
-        return BaseHeight;
+        return X0Z0Height;
     }
 
-    float NextXHeight = GetHeight((int)x + 1, (int)z);
-    float RatioX = x - floorf(x);
-    float InterpolatedHeightX = (float)(NextXHeight - BaseHeight) * RatioX + (float)BaseHeight;
+    float X1Z0Height = GetHeight((int)x + 1, (int)z);
+    float X0Z1Height = GetHeight((int)x, (int)z + 1);
+    float X1Z1Height = GetHeight((int)x + 1, (int)z + 1);
 
-    float NextZHeight = GetHeight((int)x, (int)z + 1);
-    float RatioZ = z - floorf(z);
-    float InterpolatedHeightZ = (float)(NextZHeight - BaseHeight) * RatioZ + (float)BaseHeight;
+    float FactorX = x - floorf(x);
 
-    float FinalHeight = (InterpolatedHeightX + InterpolatedHeightZ) / 2.0f;
+    float InterpolatedBottom = (X1Z0Height - X0Z0Height) * FactorX + X0Z0Height;
+    float InterpolatedTop = (X1Z1Height - X0Z1Height) * FactorX + X0Z1Height;
+
+    float FactorZ = z - floorf(z);
+
+    float FinalHeight = (InterpolatedTop - InterpolatedBottom) * FactorZ + InterpolatedBottom;
+
+    // float NextXHeight = GetHeight((int)x + 1, (int)z);
+    // float RatioX = x - floorf(x);
+    // float InterpolatedHeightX = (float)(NextXHeight - BaseHeight) * RatioX + (float)BaseHeight;
+
+    // float NextZHeight = GetHeight((int)x, (int)z + 1);
+    // float RatioZ = z - floorf(z);
+    // float InterpolatedHeightZ = (float)(NextZHeight - BaseHeight) * RatioZ + (float)BaseHeight;
+
+    // float FinalHeight = (InterpolatedHeightX + InterpolatedHeightZ) / 2.0f;
 
     return FinalHeight;
 }
@@ -148,3 +161,44 @@ void BaseTerrain::SetTextureHeights(float Tex0Height, float Tex1Height, float Te
     m_terrainTech.SetTextureHeights(Tex0Height, Tex1Height, Tex2Height, Tex3Height);
 }
 
+float BaseTerrain::GetWorldHeight(float x, float z) const
+{
+    float HeightMapX = x / m_worldScale;
+    float HeightMapZ = z / m_worldScale;
+
+    return GetHeightInterpolated(HeightMapX, HeightMapZ);
+}
+
+glm::vec3 BaseTerrain::ConstrainCameraPosToTerrain(const glm::vec3 &CameraPos)
+{
+    glm::vec3 NewCameraPos = CameraPos;
+
+    if (CameraPos.x < 0.0f)
+    {
+        NewCameraPos.x = 0.5f;
+    }
+
+    if (CameraPos.z < 0.0f)
+    {
+        NewCameraPos.z = 0.0f;
+    }
+
+    if (CameraPos.x >= GetWorldSize())
+    {
+        NewCameraPos.x = GetWorldSize() - 0.5f;
+    }
+
+    if (CameraPos.z >= GetWorldSize())
+    {
+        NewCameraPos.z = GetWorldSize() - 0.5f;
+    }
+
+    NewCameraPos.y = GetWorldHeight(CameraPos.x, CameraPos.z) + m_cameraHeight;
+
+    float f = sinf(CameraPos.x * 4.0f) + cosf(CameraPos.z * 4.0f);    
+    f /= 35.0f; 
+
+    NewCameraPos.y += f;
+
+    return NewCameraPos;
+}

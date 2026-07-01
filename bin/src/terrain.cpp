@@ -36,6 +36,14 @@ void BaseTerrain::InitTerrain(float WorldScale, float TextureScale, const std::v
         m_pTextures[i] = new Texture(GL_TEXTURE_2D);
         m_pTextures[i]->Load(TextureFilenames[i]);
     }
+
+    m_skyBox.Init("assets/skybox/textures",
+                  "interstellar_lf.tga",
+                  "interstellar_rt.tga",
+                  "interstellar_up.tga",
+                  "interstellar_dn.tga",
+                  "interstellar_ft.tga",
+                  "interstellar_bk.tga");
 }
 
 void BaseTerrain::Finalize()
@@ -145,6 +153,7 @@ void BaseTerrain::Render(const Camera &Camera)
 
     m_terrainTech.SetLightDir(m_lightDir);
     m_geomipGrid.Render(Camera.GetPos(), VP);
+    m_skyBox.Render(Camera);
 }
 
 void BaseTerrain::SetMinMaxHeight(float MinHeight, float MaxHeight)
@@ -195,8 +204,8 @@ glm::vec3 BaseTerrain::ConstrainCameraPosToTerrain(const glm::vec3 &CameraPos)
 
     NewCameraPos.y = GetWorldHeight(CameraPos.x, CameraPos.z) + m_cameraHeight;
 
-    float f = sinf(CameraPos.x * 4.0f) + cosf(CameraPos.z * 4.0f);    
-    f /= 35.0f; 
+    float f = sinf(CameraPos.x * 4.0f) + cosf(CameraPos.z * 4.0f);
+    f /= 35.0f;
 
     NewCameraPos.y += f;
 

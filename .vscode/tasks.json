@@ -23,6 +23,7 @@
                 "3rdparty/ImGUI/imgui_impl_glfw.cpp",
                 "3rdparty/ImGUI/imgui_impl_opengl3.cpp",
                 "-I${workspaceFolder}/bin/inc",
+                "-I${workspaceFolder}/3rdparty/gli",
                 "-I${workspaceFolder}/3rdparty/ImGUI",
                 "-I${workspaceFolder}/3rdparty/stb",
                 "-o",

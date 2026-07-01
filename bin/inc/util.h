@@ -1,5 +1,7 @@
 #pragma once
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <string>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -8,6 +10,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720

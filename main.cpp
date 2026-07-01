@@ -8,15 +8,16 @@
 
 int main(int argc, char **argv)
 {
-    // App *app = new App();
-    AppTerrain *app = new AppTerrain();
+    App *app = new App();
+    // AppTerrain *app = new AppTerrain();
 
     app->Init();
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glCullFace(GL_BACK);
-    glEnable(GL_CULL_FACE);
+    // glCullFace(GL_BACK);
+    glDisable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CLIP_DISTANCE0);
 
     app->Run();
 

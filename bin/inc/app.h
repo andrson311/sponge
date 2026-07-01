@@ -74,6 +74,10 @@ private:
     glm::vec3 m_cameraTarget;
     bool m_cameraOnLight = false;
     bool m_isOrthoCamera = false;
+    glm::vec3 m_position;
+    float m_clipPlaneHeight = 1.0f;
+    float m_clipPlaneAngle = 0.0f;
+    bool m_isPaused = false;
     ShadowMapOffsetTexture *m_pShadowMapOffsetTexture = NULL;
     int m_shadowMapFilterSize = 0;
     float m_shadowMapSampleRadius = 0.0f;

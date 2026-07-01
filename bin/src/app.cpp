@@ -45,38 +45,12 @@ static void MouseButtonCallback(GLFWwindow *window, int Button, int Action, int 
 
 App::App()
 {
-    m_dirLight.WorldDirection = glm::vec3(1.0f, -0.15f, 1.0f);
-    m_dirLight.DiffuseIntensity = 4.0f;
+    m_dirLight.AmbientIntensity = 0.5f;
+    m_dirLight.DiffuseIntensity = 0.9f;
+    m_dirLight.Color = glm::vec3(1.0f);
+    m_dirLight.WorldDirection = glm::vec3(0.0f, -0.5f, 1.0f);
 
-    m_pointLights[0].WorldPosition = glm::vec3(5.0f);
-    m_pointLights[1].WorldPosition = glm::vec3(-7.0f, 3.0f, 7.0f);
-
-    float metalRough = 0.43f;
-
-    // gold
-    m_meshData[0] = {
-        glm::vec3(-20.0f, 0.0f, 75.0f),
-        glm::vec3(1.0f, 0.71f, 0.29f)};
-
-    // copper
-    m_meshData[1] = {
-        glm::vec3(-10.0f, 0.0f, 75.0f),
-        glm::vec3(0.95f, 0.64f, 0.54f)};
-
-    // aluminium
-    m_meshData[2] = {
-        glm::vec3(0.0f, 0.0f, 75.0f),
-        glm::vec3(0.91f, 0.92f, 0.92f)};
-
-    // titanium
-    m_meshData[3] = {
-        glm::vec3(10.0f, 0.0f, 75.0f),
-        glm::vec3(0.542f, 0.497f, 0.449f)};
-
-    // silver
-    m_meshData[4] = {
-        glm::vec3(20.0f, 0.0f, 75.0f),
-        glm::vec3(0.95f, 0.93f, 0.88f)};
+    m_position = glm::vec3(0.0f, 0.0f, -12.0f);
 }
 
 App::~App()
@@ -94,8 +68,8 @@ void App::Init()
     InitCallbacks();
     InitCamera();
     InitMesh();
-    // InitShaders();
-    InitRenderer();
+    InitShaders();
+    // InitRenderer();
 
     m_startTime = GetCurrentTimeMillis();
     m_currentTime = m_startTime;
@@ -114,37 +88,84 @@ void App::Run()
 
 void App::RenderSceneCB()
 {
+    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    m_lightingTech.Enable();
     m_pGameCamera->OnRender();
 
-    static float foo = 0.0f;
-    foo += 0.01f;
+    // render the main object
 
-    m_pointLights[0].WorldPosition = glm::vec3(sinf(foo) * 7.0f, 3.0f, cosf(foo) * 7.0f);
-    m_phongRenderer.UpdatePointLightPos(0, m_pointLights[0].WorldPosition);
+    glm::mat4 CameraView = m_pGameCamera->GetMatrix();
+    glm::mat4 CameraProjection = m_pGameCamera->GetProjectionMat();
 
-    m_dirLight.WorldDirection = glm::vec3(sinf(foo), -0.5f, cosf(foo));
-    m_phongRenderer.UpdateDirLightDir(m_dirLight.WorldDirection);
+    m_lightingTech.SetMaterial(m_pMesh1->GetMaterial());
 
-    for (int i = 0; i < std::size(m_meshData); i++)
-    {
-        m_pMesh->SetPosition(m_meshData[i].Pos);
-        m_pMesh->GetPBRMaterial().Roughness = 0.43f;
-        m_pMesh->GetPBRMaterial().IsMetal = true;
-        m_pMesh->GetPBRMaterial().Color = m_meshData[i].Color;
-        m_phongRenderer.Render(m_pMesh);
-    }
+    glm::vec3 PlaneNormal(sinf(m_clipPlaneAngle), -1.0f, 0.0f);
+    glm::vec3 PointOnPlane(0.0f, m_clipPlaneHeight, 0.0f);
 
-    float Roughness[] = {0.1f, 0.2f, 0.3f, 0.4f, 0.5f};
+    m_lightingTech.SetClipPlane(PlaneNormal, PointOnPlane);
 
-    for (int i = 0; i < std::size(m_meshData); i++)
-    {
-        m_pMesh->SetPosition(m_meshData[i].Pos + glm::vec3(0.0f, 15.0f, 0.0f));
-        m_pMesh->GetPBRMaterial().Roughness = Roughness[i];
-        m_pMesh->GetPBRMaterial().IsMetal = false;
-        m_pMesh->GetPBRMaterial().Color = glm::vec3(0.1f, 0.33f, 0.17f);
-        m_phongRenderer.Render(m_pMesh);
-    }
+    m_pMesh1->SetPosition(m_position);
+    glm::mat4 World = m_pMesh1->GetWorldMatrix();
+    glm::mat4 WVP = CameraProjection * CameraView * World;
+    m_lightingTech.SetWVP(WVP);
+
+    glm::vec3 CameraLocalPos3f = m_pMesh1->GetWorldTransform().WorldPosToLocalPos(m_pGameCamera->GetPos());
+    m_lightingTech.SetCameraLocalPos(CameraLocalPos3f);
+    m_dirLight.CalcLocalDirection(m_pMesh1->GetWorldTransform());
+    m_lightingTech.SetDirectionalLight(m_dirLight);
+    m_pMesh1->Render();
+
+    // render the terrain
+
+    PlaneNormal = glm::vec3(0.0f, -1.0f, 0.0f);
+    m_lightingTech.SetClipPlane(PlaneNormal, PointOnPlane);
+
+    World = m_pTerrain->GetWorldMatrix();
+    WVP = CameraProjection * CameraView * World;
+    m_lightingTech.SetWVP(WVP);
+
+    m_dirLight.CalcLocalDirection(m_pTerrain->GetWorldTransform());
+    m_lightingTech.SetDirectionalLight(m_dirLight);
+    m_lightingTech.SetMaterial(m_pTerrain->GetMaterial());
+
+    CameraLocalPos3f = m_pTerrain->GetWorldTransform().WorldPosToLocalPos(m_pGameCamera->GetPos());
+    m_lightingTech.SetCameraLocalPos(CameraLocalPos3f);
+
+    m_pTerrain->Render();
+
+    // static float foo = 0.0f;
+    // foo += 0.002f;
+    // float R = 10.0f;
+    // glm::vec3 Pos(m_position.x + cosf(foo) * R, 7.0f, m_position.z * sinf(foo) * R);
+    // glm::vec3 Target = m_position - Pos;
+    // Target.y += 1.0f;
+
+    // m_pointLights[0].WorldPosition = glm::vec3(sinf(foo) * 7.0f, 3.0f, cosf(foo) * 7.0f);
+    // m_phongRenderer.UpdatePointLightPos(0, m_pointLights[0].WorldPosition);
+
+    // m_dirLight.WorldDirection = glm::vec3(sinf(foo), -0.5f, cosf(foo));
+    // m_phongRenderer.UpdateDirLightDir(m_dirLight.WorldDirection);
+
+    // for (int i = 0; i < std::size(m_meshData); i++)
+    // {
+    //     m_pMesh->SetPosition(m_meshData[i].Pos);
+    //     m_pMesh->GetPBRMaterial().Roughness = 0.43f;
+    //     m_pMesh->GetPBRMaterial().IsMetal = true;
+    //     m_pMesh->GetPBRMaterial().Color = m_meshData[i].Color;
+    //     m_phongRenderer.Render(m_pMesh);
+    // }
+
+    // float Roughness[] = {0.1f, 0.2f, 0.3f, 0.4f, 0.5f};
+
+    // for (int i = 0; i < std::size(m_meshData); i++)
+    // {
+    //     m_pMesh->SetPosition(m_meshData[i].Pos + glm::vec3(0.0f, 15.0f, 0.0f));
+    //     m_pMesh->GetPBRMaterial().Roughness = Roughness[i];
+    //     m_pMesh->GetPBRMaterial().IsMetal = false;
+    //     m_pMesh->GetPBRMaterial().Color = glm::vec3(0.1f, 0.33f, 0.17f);
+    //     m_phongRenderer.Render(m_pMesh);
+    // }
 }
 
 void App::ShadowMapPass()
@@ -249,6 +270,22 @@ void App::KeyBoardCB(u_int key, int state)
             glfwDestroyWindow(window);
             glfwTerminate();
             exit(0);
+
+        case GLFW_KEY_F:
+            m_clipPlaneHeight += 0.1f;
+            break;
+
+        case GLFW_KEY_V:
+            m_clipPlaneHeight -= 0.1f;
+            break;
+
+        case GLFW_KEY_X:
+            m_clipPlaneAngle += 0.1f;
+            break;
+
+        case GLFW_KEY_C:
+            m_clipPlaneAngle -= 0.1f;
+            break;
         }
     }
 
@@ -358,13 +395,13 @@ void App::InitShaders()
     m_lightingTech.SetTextureUnit(COLOR_TEXTURE_UNIT_INDEX);
     // m_lightingTech.SetShadowCubeMapTextureUnit(SHADOW_CUBE_MAP_TEXTURE_UNIT_INDEX);
     m_lightingTech.SetShadowMapTextureUnit(SHADOW_TEXTURE_UNIT_INDEX);
-    m_lightingTech.SetShadowMapSize(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
-    m_lightingTech.SetShadowMapFilterSize(m_shadowMapFilterSize);
-    m_lightingTech.SetShadowMapOffsetTextureUnit(SHADOW_MAP_RANDOM_OFFSET_TEXTURE_UNIT_INDEX);
-    m_lightingTech.SetShadowMapOffsetTextureParams(
-        (float)m_shadowMapOffsetTextureSize,
-        (float)m_shadowMapOffsetFilterSize,
-        m_shadowMapSampleRadius);
+    // m_lightingTech.SetShadowMapSize(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
+    // m_lightingTech.SetShadowMapFilterSize(m_shadowMapFilterSize);
+    // m_lightingTech.SetShadowMapOffsetTextureUnit(SHADOW_MAP_RANDOM_OFFSET_TEXTURE_UNIT_INDEX);
+    // m_lightingTech.SetShadowMapOffsetTextureParams(
+    //     (float)m_shadowMapOffsetTextureSize,
+    //     (float)m_shadowMapOffsetFilterSize,
+    //     m_shadowMapSampleRadius);
 
     //    m_lightingTech.SetSpecularExponentTextureUnit(SPECULAR_EXPONENT_UNIT_INDEX);
 
@@ -386,14 +423,14 @@ void App::InitRenderer()
 
 void App::InitMesh()
 {
-    // m_pMesh1 = new BasicMesh();
+    m_pMesh1 = new BasicMesh();
     // m_pMesh1 = new SkinnedMesh();
     // m_pMesh1->LoadMesh("assets/vanguard/Vanguard.dae");
     // m_pMesh1->LoadMesh("assets/house/house.obj");
     // m_pMesh1->LoadMesh("assets/example/example1.glb");
     // m_pMesh1->SetPosition(0.0f, 0.0f, 10.0f);
     // m_pMesh1->SetRotation(glm::radians(-90.0f), 0.0f, 0.0f);
-    // m_pMesh1->LoadMesh("assets/ordinary_house/ordinary_house.obj");
+    m_pMesh1->LoadMesh("assets/ordinary_house/ordinary_house.obj");
 
     // m_pMesh = new SkinnedMesh();
     // m_pMesh->LoadMesh("assets/zombie/zombie_catwalk.dae");
@@ -401,11 +438,11 @@ void App::InitMesh()
     // m_pMesh->SetPosition(0.0f, 0.0f, 55.0f);
     // m_pMesh->SetScale(0.01f);
 
-    m_pMesh = new SkinnedMesh();
+    // m_pMesh = new SkinnedMesh();
     // m_pMesh->LoadMesh("assets/zombie/dancing_zombie.glb");
-    m_pMesh->LoadMesh("assets/dragon/dragon.obj");
-    m_pMesh->SetPBR(true);
-    m_pMesh->SetRotation(0.0f, glm::radians(90.0f), 0.0f);
+    // m_pMesh->LoadMesh("assets/dragon/dragon.obj");
+    // m_pMesh->SetPBR(true);
+    // m_pMesh->SetRotation(0.0f, glm::radians(90.0f), 0.0f);
     // m_pMesh->SetRotation(glm::radians(90.0f), 0.0f, 0.0f);
     // m_pMesh->SetPosition(0.0f, 0.0f, 55.0f);
     // m_pMesh->SetScale(0.01f);

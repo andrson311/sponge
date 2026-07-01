@@ -8,7 +8,7 @@
 #include "texture.h"
 #include "geomip_grid.h"
 #include "terrain_technique.h"
-#include "skybox.h"
+#include "skydome.h"
 
 class BaseTerrain
 {
@@ -53,5 +53,5 @@ private:
     TerrainTechnique m_terrainTech;
     glm::vec3 m_lightDir;
     float m_cameraHeight = 2.0f;
-    SkyBox m_skyBox;
+    Skydome* m_pSkydome = NULL;
 };

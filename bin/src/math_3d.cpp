@@ -268,3 +268,14 @@ bool IsPointInsideViewFrustum(const glm::vec3 &p, const glm::mat4 &VP)
 
     return InsideViewFrustum;
 }
+
+glm::vec3 SphericalToCartesian(float Radius, float Pitch, float Heading)
+{
+    float P = glm::radians(Pitch);
+    float H = glm::radians(Heading);
+
+    return glm::vec3(
+        Radius * cosf(P) * sinf(H),
+        -Radius * sinf(P),
+        Radius * cosf(P) * cosf(H));
+}

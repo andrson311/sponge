@@ -107,3 +107,4 @@ void CalcClipPlanes(const glm::mat4 &ViewProj,
                     glm::vec4 &b, glm::vec4 &t,
                     glm::vec4 &n, glm::vec4 &f);
 bool IsPointInsideViewFrustum(const glm::vec3 &p, const glm::mat4 &VP);
+glm::vec3 SphericalToCartesian(float Radius, float Pitch, float Heading);

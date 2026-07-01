@@ -37,13 +37,8 @@ void BaseTerrain::InitTerrain(float WorldScale, float TextureScale, const std::v
         m_pTextures[i]->Load(TextureFilenames[i]);
     }
 
-    m_skyBox.Init("assets/skybox/textures",
-                  "interstellar_lf.tga",
-                  "interstellar_rt.tga",
-                  "interstellar_up.tga",
-                  "interstellar_dn.tga",
-                  "interstellar_ft.tga",
-                  "interstellar_bk.tga");
+    m_pSkydome = new Skydome(8, 32, 1.0f, "assets/skydome/kloofendal_48d_partly_cloudy_puresky_4k.jpg",
+                             COLOR_TEXTURE_UNIT_0, COLOR_TEXTURE_UNIT_INDEX_0);
 }
 
 void BaseTerrain::Finalize()
@@ -153,7 +148,7 @@ void BaseTerrain::Render(const Camera &Camera)
 
     m_terrainTech.SetLightDir(m_lightDir);
     m_geomipGrid.Render(Camera.GetPos(), VP);
-    m_skyBox.Render(Camera);
+    m_pSkydome->Render(Camera);
 }
 
 void BaseTerrain::SetMinMaxHeight(float MinHeight, float MaxHeight)

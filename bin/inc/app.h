@@ -2,6 +2,7 @@
 
 #include <GL/glew.h>
 #include <glm/glm.hpp>
+
 #include "glfw.h"
 #include "util.h"
 #include "camera.h"

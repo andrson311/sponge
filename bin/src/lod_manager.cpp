@@ -33,6 +33,7 @@ void LODManager::CalcMaxLOD()
     int patchSizeLog2 = (int)log2f((float)NumSegments);
     printf("log2 of patch size %d is %d\n", m_patchSize, patchSizeLog2);
     m_maxLOD = patchSizeLog2 - 1;
+    m_maxLOD = 0; // hack for water
 }
 
 void LODManager::Update(const glm::vec3 &CameraPos)

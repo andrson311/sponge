@@ -112,9 +112,10 @@ void AppTerrain::RenderScene()
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
-
+    
+    m_pGameCamera->OnRender();
     static float foo = 0.0f;
-    foo += 0.002f;
+    foo += 0.01f;
 
     // float R = 1100.0f;
     // float S = 512.0f;
@@ -127,10 +128,7 @@ void AppTerrain::RenderScene()
     // m_pGameCamera->SetTarget(Target);
     // m_pGameCamera->SetUp(0.0f, 1.0f, 0.0f);
 
-    // m_pGameCamera->OnRender();
-
-    float y = std::min(-0.4f, cosf(foo));
-    glm::vec3 LightDir(sinf(foo * 5.0f), y, cosf(foo * 5.0f));
+    glm::vec3 LightDir(sinf(foo), -1.0f, 0.0f);
 
     m_terrain.SetLightDir(LightDir);
     m_terrain.Render(*m_pGameCamera);
@@ -271,10 +269,10 @@ void AppTerrain::InitTerrain()
     float TextureScale = 4.0f;
 
     std::vector<std::string> TextureFilenames;
+    TextureFilenames.push_back("assets/terrain_textures/water.png");
     TextureFilenames.push_back("assets/terrain_textures/IMGP5525_seamless.jpg");
     TextureFilenames.push_back("assets/terrain_textures/IMGP5487_seamless.jpg");
     TextureFilenames.push_back("assets/terrain_textures/tilable-IMG_0044-verydark.png");
-    TextureFilenames.push_back("assets/terrain_textures/water.png");
 
     m_terrain.InitTerrain(WorldScale, TextureScale, TextureFilenames);
     m_terrain.CreateMidpointDisplacement(m_terrainSize, m_patchSize, m_roughness, m_minHeight, m_maxHeight);

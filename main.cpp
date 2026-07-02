@@ -8,8 +8,8 @@
 
 int main(int argc, char **argv)
 {
-    // App *app = new App();
-    AppTerrain *app = new AppTerrain();
+    App *app = new App();
+    // AppTerrain *app = new AppTerrain();
 
     app->Init();
 
@@ -17,7 +17,7 @@ int main(int argc, char **argv)
     glCullFace(GL_BACK);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
-    // glEnable(GL_CLIP_DISTANCE0);
+    glEnable(GL_CLIP_DISTANCE0);
 
     app->Run();
 

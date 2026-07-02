@@ -27,6 +27,7 @@
     aiProcess_GlobalScale)
 
 #define INVALID_UNIFORM_LOCATION 0xFFFFFFFF
+#define INVALID_OGL_VALUE 0xffffffff
 
 #define COLOR_TEXTURE_UNIT GL_TEXTURE0
 #define COLOR_TEXTURE_UNIT_INDEX 0

@@ -16,6 +16,7 @@
 #include "shadow_mapping_technique_point_light.h"
 #include "framebuffer_object.h"
 #include "shadow_map_offset_texture.h"
+#include "billboard_list.h"
 
 struct CameraDirection
 {
@@ -56,6 +57,7 @@ private:
     void InitRenderer();
     void InitShaders();
     void InitMesh();
+    void InitBillboardList();
 
     GLFWwindow *window = NULL;
     Camera *m_pGameCamera = NULL;
@@ -78,6 +80,7 @@ private:
     float m_clipPlaneHeight = 1.0f;
     float m_clipPlaneAngle = 0.0f;
     bool m_isPaused = false;
+    bool m_isWireframe = false;
     ShadowMapOffsetTexture *m_pShadowMapOffsetTexture = NULL;
     int m_shadowMapFilterSize = 0;
     float m_shadowMapSampleRadius = 0.0f;
@@ -93,6 +96,8 @@ private:
     float m_blendFactor = 0.0f;
 
     PointLight m_pointLights[2];
+
+    BillboardList m_billboardList;
 
     struct
     {

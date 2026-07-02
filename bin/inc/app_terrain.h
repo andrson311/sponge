@@ -49,7 +49,7 @@ private:
     int m_terrainSize = 513;
     float m_roughness = 1.0f;
     float m_minHeight = 0.0f;
-    float m_maxHeight = 150.0f;
+    float m_maxHeight = 1.0f;
     int m_patchSize = 17;
     float m_counter = 0.0f;
     bool m_constrainCamera = false;

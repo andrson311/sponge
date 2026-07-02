@@ -2,32 +2,21 @@
 
 layout (location = 0) in vec3 Position;
 layout (location = 1) in vec2 InTex;
-layout (location = 2) in vec3 InNormal;
 
-uniform mat4 gVP;
-uniform float gMinHeight;
-uniform float gMaxHeight;
+uniform float gTime;
+uniform vec3 gCenter = vec3(1000.0, 0.0, 1000.0);
 
-out vec4 Color;
-out vec2 Tex;
-out vec3 WorldPos;
-out vec3 Normal;
+out VS_OUT {
+    vec2 Tex;
+} vs_out;
+
 
 void main()
 {
-    gl_Position = gVP * vec4(Position, 1.0);
+    gl_Position = vec4(Position, 1.0);
 
-    float DeltaHeight = gMaxHeight - gMinHeight;
+    float Distance = length(Position - gCenter);
+    gl_Position.y = sin(Distance / 12.0 + gTime) * 8.0;
 
-    float HeightRatio = (Position.y - gMinHeight) / DeltaHeight;
-
-    float c = HeightRatio * 0.8 + 0.2;
-
-    Color = vec4(c, c, c, 1.0);
-
-    Tex = InTex;
-    
-    WorldPos = Position;
-    
-    Normal = InNormal;
+    vs_out.Tex = InTex;
 }

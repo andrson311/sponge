@@ -372,6 +372,21 @@ void GeomipGrid::Render(const glm::vec3 &CameraPos, const glm::mat4 &ViewProj)
             {
                 continue;
             }
+            // if (IsCameraInPatch(CameraPos, x, z))
+            // {
+            //     // continue to draw call
+            // }
+            // else if (!IsPatchInsideViewFrustum_WorldSpace(x, z, fc))
+            // {
+            //     if (!IsCameraCloseToPatch(CameraPos, x, z))
+            //     {
+            //         continue;
+            //     }
+            // }
+            // else
+            // {
+            //     // nothing happens
+            // }
 
             const LODManager::PatchLOD &plod = m_lodManager.GetPatchLOD(PatchX, PatchZ);
             int C = plod.Core;

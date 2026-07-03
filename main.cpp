@@ -6,12 +6,14 @@
 #include "app.h"
 #include "app_terrain.h"
 #include "app_freetype.h"
+#include "app_bezier.h"
 
 int main(int argc, char **argv)
 {
     // App *app = new App();
     // AppTerrain *app = new AppTerrain();
-    AppFreetype *app = new AppFreetype();
+    // AppFreetype *app = new AppFreetype();
+    app = new AppBezier();
 
     app->Init();
 

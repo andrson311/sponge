@@ -40,8 +40,8 @@ public:
 
 private:
     void LoadInternal(const void *pImageData, bool IsSRGB);
-    void LoadInternalNonDSA(const void * pImageData, bool IsRGB);
-    void LoadInternalDSA(const void * pImageData, bool IsRGB);
+    void LoadInternalNonDSA(const void *pImageData, bool IsRGB);
+    void LoadInternalDSA(const void *pImageData, bool IsRGB);
 
     void BindInternalNonDSA(GLenum TextureUnit);
     void BindInternalDSA(GLenum TextureUnit);

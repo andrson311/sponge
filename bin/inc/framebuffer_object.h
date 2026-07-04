@@ -15,9 +15,9 @@ public:
 
 private:
     bool InitNonDSA(u_int Width, u_int Height, bool ForPCF = false);
-    // bool InitDSA(u_int Width, u_int Height, bool ForPCF = false);
+    bool InitDSA(u_int Width, u_int Height, bool ForPCF = false);
 
-    // void BindForReadingDSA(GLenum TextureUnit);
+    void BindForReadingDSA(GLenum TextureUnit);
     void BindForReadingNonDSA(GLenum TextureUnit);
 
     u_int m_width = 0;

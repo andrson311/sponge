@@ -32,17 +32,17 @@ public:
     int GetHeight() const { return m_height; }
 
 private:
-    // void InitDSA(int Width, int Height, int NumFormatComponents,
-    //              bool IsFloat, bool DepthEnabled, bool NormalEnabled);
+    void InitDSA(int Width, int Height, int NumFormatComponents,
+                 bool IsFloat, bool DepthEnabled, bool NormalEnabled);
     void InitNonDSA(int Width, int Height, int NumFormatComponents,
                     bool IsFloat, bool DepthEnabled, bool NormalEnabled);
 
     void GenerateBuffer(GLuint &Buffer, int Width, int Height,
                         int NumFormatComponents, bool IsFloat);
-    // void GenerateBufferDSA(GLuint &Buffer, int Width, int Height,
-    //                     int NumFormatComponents, bool IsFloat);
+    void GenerateBufferDSA(GLuint &Buffer, int Width, int Height,
+                           int NumFormatComponents, bool IsFloat);
     void GenerateBufferNonDSA(GLuint &Buffer, int Width, int Height,
-                        int NumFormatComponents, bool IsFloat);
+                              int NumFormatComponents, bool IsFloat);
     void GenerateDepthBuffer(int Width, int Height);
 
     int m_width = 0;

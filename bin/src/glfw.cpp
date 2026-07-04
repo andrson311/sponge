@@ -1,5 +1,23 @@
 #include <iostream>
-#include "../inc/glfw.h"
+#include "glfw.h"
+
+static int glMajorVersion = 0;
+static int glMinorVersion = 0;
+
+int GetGLMajorVersion()
+{
+    return glMajorVersion;
+}
+
+int GetGLMinorVersion()
+{
+    return glMinorVersion;
+}
+
+int IsGLVersionHigher(int MajorVer, int MinorVer)
+{
+    return ((glMajorVersion >= MajorVer) && (glMinorVersion >= MinorVer));
+}
 
 static void InitGlew()
 {
@@ -12,7 +30,7 @@ static void InitGlew()
     }
 }
 
-GLFWwindow *InitGLFW(int width, int height, bool is_full_screen, const char *title)
+GLFWwindow *InitGLFW(int major_ver, int minor_ver, int width, int height, bool is_full_screen, const char *title)
 {
     if (glfwInit() != 1)
     {
@@ -25,7 +43,7 @@ GLFWwindow *InitGLFW(int width, int height, bool is_full_screen, const char *tit
 
     if (!window)
     {
-        const char* pDesc = NULL;
+        const char *pDesc = NULL;
         int error_code = glfwGetError(&pDesc);
 
         fprintf(stderr, "Error creating window: %s", pDesc);
@@ -33,6 +51,9 @@ GLFWwindow *InitGLFW(int width, int height, bool is_full_screen, const char *tit
     }
 
     glfwMakeContextCurrent(window);
+
+    glGetIntegerv(GL_MAJOR_VERSION, &glMajorVersion);
+    glGetIntegerv(GL_MINOR_VERSION, &glMinorVersion);
 
     InitGlew();
     glfwSwapInterval(1);

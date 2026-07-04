@@ -40,7 +40,7 @@ protected:
     virtual void InitSingleMeshOpt(u_int MeshIndex, const aiMesh *paiMesh);
     virtual void PopulateBuffers();
     virtual void PopulateBuffersNonDSA();
-    // virtual void PopulateBuffersDSA();
+    virtual void PopulateBuffersDSA();
 
     struct BasicMeshEntry
     {

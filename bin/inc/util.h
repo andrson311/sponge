@@ -11,6 +11,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/euler_angles.hpp>
+#include "glfw.h"
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720

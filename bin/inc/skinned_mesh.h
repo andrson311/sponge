@@ -78,12 +78,12 @@ private:
         VertexBoneData Bones;
     };
 
-    // virtual void InitSingleMeshOpt(u_int MeshIndex, const aiMesh *paiMesh);
-    // void OptimizeMesh(int MeshIndex, std::vector<u_int> &Indices, std::vector<SkinnedVertex> &Vertices);
+    virtual void InitSingleMeshOpt(u_int MeshIndex, const aiMesh *paiMesh);
+    void OptimizeMesh(int MeshIndex, std::vector<u_int> &Indices, std::vector<SkinnedVertex> &Vertices);
 
     virtual void PopulateBuffers();
     void PopulateBuffersNonDSA();
-    // void PopulateBuffersDSA();
+    void PopulateBuffersDSA();
 
     void LoadMeshBones(u_int MeshIndex, const aiMesh *paiMesh, std::vector<SkinnedVertex> &SkinnedVertices, int BaseVertex);
     void LoadSingleBone(u_int MeshIndex, const aiBone *pBone, std::vector<SkinnedVertex> &SkinnedVertices, int BaseVertex);

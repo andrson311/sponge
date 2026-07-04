@@ -90,20 +90,6 @@ void App::RenderSceneCB()
 
     m_pGameCamera->OnRender();
 
-    if (m_runAnimation)
-    {
-        m_currentTime = GetCurrentTimeMillis();
-    }
-
-    float AnimationTimeSec = (float)((double)m_currentTime - (double)m_startTime) / 1000.0f;
-
-    float TotalPauseTimeSec = (float)((double)m_totalPauseTime / 1000.0f);
-    AnimationTimeSec -= TotalPauseTimeSec;
-
-    static float foo = 0.0f;
-    m_pMesh1->SetRotation(0.0f, 180.0f + foo, 0.0f);
-    foo += 0.005f;
-    //  m_phongRenderer.RenderAnimation(m_pMesh1, AnimationTimeSec, m_animationIndex);
     m_phongRenderer.Render(m_pMesh1);
 }
 
@@ -315,7 +301,7 @@ void App::InitCallbacks()
 
 void App::InitCamera()
 {
-    glm::vec3 Pos(0.0f, 5.0f, 0.0f);
+    glm::vec3 Pos(0.0f, 0.0f, 0.0f);
     glm::vec3 Target(0.0f, 0.0f, 1.0f);
     glm::vec3 Up(0.0f, 1.0f, 0.0f);
 
@@ -330,6 +316,7 @@ void App::InitCamera()
         zFar};
 
     m_pGameCamera = new Camera(persProjInfo, Pos, Target, Up);
+    m_pGameCamera->SetSpeed(0.1f);
 }
 
 void App::InitShaders()
@@ -363,9 +350,11 @@ void App::InitShaders()
 
 void App::InitRenderer()
 {
-    m_phongRenderer.InitPhongRenderer();
+    m_phongRenderer.InitPhongRenderer(LightingTechnique::SUBTECH_WIREFRAME_ON_MESH);
     m_phongRenderer.SetCamera(m_pGameCamera);
     m_phongRenderer.SetDirLight(m_dirLight);
+    m_phongRenderer.SetWireframeLineWidth(1.0f);
+    m_phongRenderer.SetWireframeColor(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
     // m_phongRenderer.SetPointLights(std::size(m_pointLights), &m_pointLights[0]);
     // m_phongRenderer.SetPBR(true);
 }
@@ -374,10 +363,9 @@ void App::InitMesh()
 {
     m_pMesh1 = new BasicMesh();
 
-    m_pMesh1->LoadMesh("assets/dragon/dragon.obj");
-    m_pMesh1->SetScale(0.1f);
-
-    m_pMesh1->SetPosition(0.0f, 0.0f, 3.0f);
+    m_pMesh1->LoadMesh("assets/vanguard/Vanguard.dae");
+    m_pMesh1->SetRotation(glm::radians(90.0f), glm::radians(180.0f), 0.0f);
+    m_pMesh1->SetPosition(0.0f, 0.0f, 5.0f);
 }
 
 void App::InitBillboardList()

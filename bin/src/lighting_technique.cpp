@@ -40,7 +40,13 @@ bool LightingTechnique::Init(int SubTech)
         break;
 
     case SUBTECH_WIREFRAME_ON_MESH:
-        /* TODO: implement this */
+        if (!AddShader(GL_VERTEX_SHADER, "bin/shaders/lighting_new_to_gs.vs")) {
+            return false;
+        }
+
+        if (!AddShader(GL_GEOMETRY_SHADER, "bin/shaders/wireframe_on_mesh.gs")) {
+            return false;
+        }
         break;
 
     default:

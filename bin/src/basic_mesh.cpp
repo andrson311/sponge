@@ -1,6 +1,7 @@
-#include "basic_mesh.h"
 #include <stdio.h>
 #include <cassert>
+#include <meshoptimizer.h>
+#include "basic_mesh.h"
 
 #define POSITION_LOCATION 0
 #define TEX_COORD_LOCATION 1
@@ -103,7 +104,8 @@ void BasicMesh::InitAllMeshes(const aiScene *pScene)
 {
     for (u_int i = 0; i < m_Meshes.size(); i++)
     {
-        InitSingleMesh(i, pScene->mMeshes[i]);
+        // InitSingleMesh(i, pScene->mMeshes[i]);
+        InitSingleMeshOpt(i, pScene->mMeshes[i]);
     }
 }
 
@@ -144,6 +146,119 @@ void BasicMesh::InitSingleMesh(u_int MeshIndex, const aiMesh *paiMesh)
         m_Indices.push_back(Face.mIndices[1]);
         m_Indices.push_back(Face.mIndices[2]);
     }
+}
+
+void BasicMesh::InitSingleMeshOpt(u_int MeshIndex, const aiMesh *paiMesh)
+{
+    const aiVector3D Zero3D(0.0f, 0.0f, 0.0f);
+
+    Vertex v;
+    std::vector<Vertex> Vertices(paiMesh->mNumVertices);
+
+    for (u_int i = 0; i < paiMesh->mNumVertices; i++)
+    {
+        const aiVector3D &pPos = paiMesh->mVertices[i];
+        v.Position = glm::vec3(pPos.x, pPos.y, pPos.z);
+
+        if (paiMesh->mNormals)
+        {
+            const aiVector3D &pNormal = paiMesh->mNormals[i];
+            v.Normal = glm::vec3(pNormal.x, pNormal.y, pNormal.z);
+        }
+        else
+        {
+            aiVector3D Normal(0.0f, 1.0f, 0.0f);
+            v.Normal = glm::vec3(Normal.x, Normal.y, Normal.z);
+        }
+
+        const aiVector3D &pTexCoord = paiMesh->HasTextureCoords(0) ? paiMesh->mTextureCoords[0][i] : Zero3D;
+        v.TexCoords = glm::vec2(pTexCoord.x, pTexCoord.y);
+
+        Vertices[i] = v;
+    }
+
+    m_Meshes[MeshIndex].BaseVertex = (u_int)m_Vertices.size();
+    m_Meshes[MeshIndex].BaseIndex = (u_int)m_Indices.size();
+
+    int NumIndices = paiMesh->mNumFaces * 3;
+    std::vector<u_int> Indices;
+    Indices.resize(NumIndices);
+
+    for (u_int i = 0; i < paiMesh->mNumFaces; i++)
+    {
+        const aiFace &Face = paiMesh->mFaces[i];
+        Indices[i * 3 + 0] = Face.mIndices[0];
+        Indices[i * 3 + 1] = Face.mIndices[1];
+        Indices[i * 3 + 2] = Face.mIndices[2];
+    }
+
+    OptimizeMesh(MeshIndex, Indices, Vertices);
+}
+
+void BasicMesh::OptimizeMesh(int MeshIndex, std::vector<u_int> &Indices, std::vector<Vertex> &Vertices)
+{
+    size_t NumIndices = Indices.size();
+    size_t NumVertices = Vertices.size();
+
+    for (size_t i = 0; i < NumIndices; i++)
+        if (Indices[i] >= NumVertices)
+            printf("bad index %u at pos %zu (NumVertices=%zu, mesh=%d)\n", Indices[i], i, NumVertices, MeshIndex);
+
+    // create a remap table
+    std::vector<u_int> remap(NumIndices);
+    size_t OptVertexCount = meshopt_generateVertexRemap(
+        remap.data(),
+        Indices.data(),
+        NumIndices,
+        Vertices.data(),
+        NumVertices,
+        sizeof(Vertex));
+
+    // allocate local index and vertex arrays
+    std::vector<u_int> OptIndices;
+    std::vector<Vertex> OptVertices;
+    OptIndices.resize(NumIndices);
+    OptVertices.resize(OptVertexCount);
+
+    // optimization #1: remove duplicate vertices
+    meshopt_remapIndexBuffer(OptIndices.data(), Indices.data(), NumIndices, remap.data());
+    meshopt_remapVertexBuffer(OptVertices.data(), Vertices.data(), NumVertices, sizeof(Vertex), remap.data());
+
+    // optimization #2: improve the locality of the vertices
+    meshopt_optimizeVertexCache(OptIndices.data(), OptIndices.data(), NumIndices, OptVertexCount);
+
+    // optimization #3: reduce pixel overdraw
+    meshopt_optimizeOverdraw(OptIndices.data(), OptIndices.data(),
+                             NumIndices, &(OptVertices[0].Position.x),
+                             OptVertexCount, sizeof(Vertex), 1.05f);
+
+    // optimization #4: optimize access to the vertex buffer
+    meshopt_optimizeVertexFetch(OptVertices.data(), OptIndices.data(),
+                                NumIndices, OptVertices.data(),
+                                OptVertexCount, sizeof(Vertex));
+
+    // optimization #5: create simplified version of the model
+    float Threshold = 0.5f;
+    size_t TargetIndexCount = (size_t)(NumIndices * Threshold);
+
+    float TargetError = 0.2f;
+    std::vector<u_int> SimplifiedIndices(OptIndices.size());
+    size_t OptIndexCount = meshopt_simplify(SimplifiedIndices.data(), OptIndices.data(),
+                                            NumIndices, &OptVertices[0].Position.x,
+                                            OptVertexCount, sizeof(Vertex),
+                                            TargetIndexCount, TargetError);
+
+    static int num_indices = 0;
+    num_indices += (int)NumIndices;
+    static int opt_indices = 0;
+    opt_indices += (int)OptIndexCount;
+    printf("Num indices %d\n", num_indices);
+    printf("Optimized number of indices %d\n", opt_indices);
+
+    SimplifiedIndices.resize(OptIndexCount);
+    m_Indices.insert(m_Indices.end(), SimplifiedIndices.begin(), SimplifiedIndices.end());
+    m_Vertices.insert(m_Vertices.end(), OptVertices.begin(), OptVertices.end());
+    m_Meshes[MeshIndex].NumIndices = (u_int)OptIndexCount;
 }
 
 bool BasicMesh::InitMaterials(const aiScene *pScene, const std::string &Filename)

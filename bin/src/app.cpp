@@ -45,12 +45,9 @@ static void MouseButtonCallback(GLFWwindow *window, int Button, int Action, int 
 
 App::App()
 {
-    m_dirLight.AmbientIntensity = 0.5f;
-    m_dirLight.DiffuseIntensity = 0.9f;
-    m_dirLight.Color = glm::vec3(1.0f);
-    m_dirLight.WorldDirection = glm::vec3(0.0f, -0.5f, 1.0f);
-
-    m_position = glm::vec3(0.0f, 0.0f, -12.0f);
+    m_dirLight.WorldDirection = glm::vec3(1.0f, -1.0f, 0.0f);
+    m_dirLight.AmbientIntensity = 1.2f;
+    m_dirLight.DiffuseIntensity = 0.4f;
 }
 
 App::~App()
@@ -68,9 +65,9 @@ void App::Init()
     InitCallbacks();
     InitCamera();
     InitMesh();
-    InitShaders();
-    // InitRenderer();
-    InitBillboardList();
+    // InitShaders();
+    InitRenderer();
+    // InitBillboardList();
 
     m_startTime = GetCurrentTimeMillis();
     m_currentTime = m_startTime;
@@ -90,41 +87,24 @@ void App::Run()
 void App::RenderSceneCB()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
-    // static float foo = 0.0f;
-    // foo += 0.001f;
-    
-    // float TerrainSize = 20.0f;
-    // float Radius = TerrainSize * 1.4f;
-    
-    // glm::vec3 Pos(cosf(foo) * Radius, 3.0f, sinf(foo) * Radius);
-    // glm::vec3 Center(0.0f, 0.5f, 0.0f);
-    // glm::vec3 Target = Center - Pos;
-    
+
     m_pGameCamera->OnRender();
-    // render the main object
 
-    glm::mat4 CameraView = m_pGameCamera->GetMatrix();
-    glm::mat4 CameraProjection = m_pGameCamera->GetProjectionMat();
-    glm::mat4 VP = CameraProjection * CameraView;
-    m_billboardList.Render(VP, m_pGameCamera->GetPos());
+    if (m_runAnimation)
+    {
+        m_currentTime = GetCurrentTimeMillis();
+    }
 
-    // render the terrain
+    float AnimationTimeSec = (float)((double)m_currentTime - (double)m_startTime) / 1000.0f;
 
-    m_lightingTech.Enable();
+    float TotalPauseTimeSec = (float)((double)m_totalPauseTime / 1000.0f);
+    AnimationTimeSec -= TotalPauseTimeSec;
 
-    glm::mat4 World = m_pTerrain->GetWorldMatrix();
-    glm::mat4 WVP = CameraProjection * CameraView * World;
-    m_lightingTech.SetWVP(WVP);
-
-    m_dirLight.CalcLocalDirection(m_pTerrain->GetWorldTransform());
-    m_lightingTech.SetDirectionalLight(m_dirLight);
-    m_lightingTech.SetMaterial(m_pTerrain->GetMaterial());
-
-    glm::vec3 CameraLocalPos3f = m_pTerrain->GetWorldTransform().WorldPosToLocalPos(m_pGameCamera->GetPos());
-    m_lightingTech.SetCameraLocalPos(CameraLocalPos3f);
-
-    m_pTerrain->Render();
+    static float foo = 0.0f;
+    m_pMesh1->SetRotation(0.0f, 180.0f + foo, 0.0f);
+    foo += 0.005f;
+    //  m_phongRenderer.RenderAnimation(m_pMesh1, AnimationTimeSec, m_animationIndex);
+    m_phongRenderer.Render(m_pMesh1);
 }
 
 void App::ShadowMapPass()
@@ -341,7 +321,7 @@ void App::InitCamera()
 
     float FOV = 45.0f;
     float zNear = 0.1f;
-    float zFar = 100.0f;
+    float zFar = 1000.0f;
     PersProjInfo persProjInfo = {
         FOV,
         (float)WINDOW_WIDTH,
@@ -386,40 +366,18 @@ void App::InitRenderer()
     m_phongRenderer.InitPhongRenderer();
     m_phongRenderer.SetCamera(m_pGameCamera);
     m_phongRenderer.SetDirLight(m_dirLight);
-    m_phongRenderer.SetPointLights(std::size(m_pointLights), &m_pointLights[0]);
-    m_phongRenderer.SetPBR(true);
+    // m_phongRenderer.SetPointLights(std::size(m_pointLights), &m_pointLights[0]);
+    // m_phongRenderer.SetPBR(true);
 }
 
 void App::InitMesh()
 {
-    // m_pMesh1 = new BasicMesh();
-    // m_pMesh1 = new SkinnedMesh();
-    // m_pMesh1->LoadMesh("assets/vanguard/Vanguard.dae");
-    // m_pMesh1->LoadMesh("assets/house/house.obj");
-    // m_pMesh1->LoadMesh("assets/example/example1.glb");
-    // m_pMesh1->SetPosition(0.0f, 0.0f, 10.0f);
-    // m_pMesh1->SetRotation(glm::radians(-90.0f), 0.0f, 0.0f);
-    // m_pMesh1->LoadMesh("assets/ordinary_house/ordinary_house.obj");
+    m_pMesh1 = new BasicMesh();
 
-    // m_pMesh = new SkinnedMesh();
-    // m_pMesh->LoadMesh("assets/zombie/zombie_catwalk.dae");
-    // m_pMesh->SetRotation(90.0f, -45.0f, 0.0f);
-    // m_pMesh->SetPosition(0.0f, 0.0f, 55.0f);
-    // m_pMesh->SetScale(0.01f);
+    m_pMesh1->LoadMesh("assets/dragon/dragon.obj");
+    m_pMesh1->SetScale(0.1f);
 
-    // m_pMesh = new SkinnedMesh();
-    // m_pMesh->LoadMesh("assets/zombie/dancing_zombie.glb");
-    // m_pMesh->LoadMesh("assets/dragon/dragon.obj");
-    // m_pMesh->SetPBR(true);
-    // m_pMesh->SetRotation(0.0f, glm::radians(90.0f), 0.0f);
-    // m_pMesh->SetRotation(glm::radians(90.0f), 0.0f, 0.0f);
-    // m_pMesh->SetPosition(0.0f, 0.0f, 55.0f);
-    // m_pMesh->SetScale(0.01f);
-
-    m_pTerrain = new BasicMesh();
-    m_pTerrain->LoadMesh("assets/terrain3/terrain.obj");
-    // m_pTerrain->LoadMesh("assets/terrain2/terrain2.obj");
-    m_pTerrain->SetPosition(0.0f, 0.0f, 0.0f);
+    m_pMesh1->SetPosition(0.0f, 0.0f, 3.0f);
 }
 
 void App::InitBillboardList()
@@ -445,5 +403,4 @@ void App::InitBillboardList()
         printf("Error\n");
         exit(0);
     }
-    
 }

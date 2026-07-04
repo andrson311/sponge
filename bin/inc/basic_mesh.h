@@ -37,7 +37,7 @@ protected:
     void Clear();
     virtual void ReserveSpace(u_int NumVertices, u_int NumIndices);
     virtual void InitSingleMesh(u_int MeshIndex, const aiMesh *paiMesh);
-    // virtual void InitSingleMeshOpt(u_int MeshIndex, const aiMesh *paiMesh);
+    virtual void InitSingleMeshOpt(u_int MeshIndex, const aiMesh *paiMesh);
     virtual void PopulateBuffers();
     virtual void PopulateBuffersNonDSA();
     // virtual void PopulateBuffersDSA();
@@ -89,7 +89,7 @@ private:
     bool InitFromScene(const aiScene *pScene, const std::string &Filename);
     void CountVerticesAndIndices(const aiScene *pScene, u_int &NumVertices, u_int &NumIndices);
     void InitAllMeshes(const aiScene *pScene);
-    // void OptimizeMesh(int MeshIndex, std::vector<u_int> &Indices, std::vector<Vertex> &Vertices);
+    void OptimizeMesh(int MeshIndex, std::vector<u_int> &Indices, std::vector<Vertex> &Vertices);
     bool InitMaterials(const aiScene *pScene, const std::string &Filename);
     void LoadTextures(const std::string &Dir, const aiMaterial *pMaterial, int index);
 

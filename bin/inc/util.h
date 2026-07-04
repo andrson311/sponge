@@ -19,6 +19,7 @@
 
 #define ASSIMP_LOAD_FLAGS ( \
     aiProcess_Triangulate | \
+    aiProcess_SortByPType | \
     aiProcess_GenSmoothNormals | \
     aiProcess_JoinIdenticalVertices | \
     aiProcess_PopulateArmatureData | \

@@ -1,3 +1,11 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <cerrno>
+#include <string.h>
+
 #include "terrain.h"
 #include "texture_config.h"
 #include "stb_image_write.h"
@@ -10,7 +18,7 @@ BaseTerrain::~BaseTerrain()
 void BaseTerrain::Destroy()
 {
     m_heightMap.Destroy();
-    m_geomipGrid.Destroy();
+    m_quadList.Destroy();
 }
 
 void BaseTerrain::InitTerrain(float WorldScale, float TextureScale, const std::vector<std::string> &TextureFilenames)
@@ -43,7 +51,8 @@ void BaseTerrain::InitTerrain(float WorldScale, float TextureScale, const std::v
 
 void BaseTerrain::Finalize()
 {
-    m_geomipGrid.CreateGeomipGrid(m_terrainSize, m_terrainSize, m_patchSize, this);
+    m_quadList.CreateQuadList(m_numPatches, m_numPatches, this);
+    m_heightMapTexture.LoadF32(m_terrainSize, m_terrainSize, m_heightMap.GetBaseAddr());
 }
 
 float BaseTerrain::GetHeightInterpolated(float x, float z) const
@@ -68,26 +77,14 @@ float BaseTerrain::GetHeightInterpolated(float x, float z) const
 
     float FinalHeight = (InterpolatedTop - InterpolatedBottom) * FactorZ + InterpolatedBottom;
 
-    // float NextXHeight = GetHeight((int)x + 1, (int)z);
-    // float RatioX = x - floorf(x);
-    // float InterpolatedHeightX = (float)(NextXHeight - BaseHeight) * RatioX + (float)BaseHeight;
-
-    // float NextZHeight = GetHeight((int)x, (int)z + 1);
-    // float RatioZ = z - floorf(z);
-    // float InterpolatedHeightZ = (float)(NextZHeight - BaseHeight) * RatioZ + (float)BaseHeight;
-
-    // float FinalHeight = (InterpolatedHeightX + InterpolatedHeightZ) / 2.0f;
-
     return FinalHeight;
 }
 
 void BaseTerrain::LoadFromFile(const char *pFilename)
 {
     LoadHeightMapFile(pFilename);
-
     assert(0);
-
-    m_geomipGrid.CreateGeomipGrid(m_terrainSize, m_terrainSize, m_patchSize, this);
+    m_quadList.CreateQuadList(m_numPatches, m_numPatches, this);
 }
 
 void BaseTerrain::LoadHeightMapFile(const char *pFilename)
@@ -134,8 +131,10 @@ void BaseTerrain::SaveToFile(const char *pFilename)
 void BaseTerrain::Render(const Camera &Camera)
 {
     glm::mat4 VP = Camera.GetViewProjMatrix();
+    glm::mat4 View = Camera.GetMatrix();
 
     m_terrainTech.Enable();
+    m_terrainTech.SetViewMatrix(View);
     m_terrainTech.SetVP(VP);
 
     for (int i = 0; i < std::size(m_pTextures); i++)
@@ -146,11 +145,10 @@ void BaseTerrain::Render(const Camera &Camera)
         }
     }
 
+    m_heightMapTexture.Bind(HEIGHT_MAP_TEXTURE_UNIT);
     m_terrainTech.SetLightDir(m_lightDir);
-    static float Time = 0.0f;
-    Time += 0.01f;
-    m_terrainTech.SetTime(Time);
-    m_geomipGrid.Render(Camera.GetPos(), VP);
+    
+    m_quadList.Render();
     m_pSkydome->Render(Camera);
 }
 
@@ -160,7 +158,7 @@ void BaseTerrain::SetMinMaxHeight(float MinHeight, float MaxHeight)
     m_maxHeight = MaxHeight;
 
     m_terrainTech.Enable();
-    m_terrainTech.SetMinMaxHeight(MinHeight, MaxHeight);
+    // m_terrainTech.SetMinMaxHeight(MinHeight, MaxHeight);
 }
 
 void BaseTerrain::SetTextureHeights(float Tex0Height, float Tex1Height, float Tex2Height, float Tex3Height)

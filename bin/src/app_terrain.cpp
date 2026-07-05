@@ -1,39 +1,6 @@
 #include "app_terrain.h"
 
-static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
-{
-    (void)scancode;
-    (void)mods;
-
-    AppTerrain *app = (AppTerrain *)glfwGetWindowUserPointer(window);
-    if (app)
-    {
-        app->KeyboardCB(key, action);
-    }
-}
-
-static void CursorPosCallback(GLFWwindow *window, double x, double y)
-{
-    AppTerrain *app = (AppTerrain *)glfwGetWindowUserPointer(window);
-    if (app)
-    {
-        app->PassiveMouseCB((int)x, (int)y);
-    }
-}
-
-static void MouseButtonCallback(GLFWwindow *window, int Button, int Action, int Mode)
-{
-    (void)Mode;
-
-    AppTerrain *app = (AppTerrain *)glfwGetWindowUserPointer(window);
-    if (app)
-    {
-        double x = 0.0;
-        double y = 0.0;
-        glfwGetCursorPos(window, &x, &y);
-        app->MouseCB(Button, Action, (int)x, (int)y);
-    }
-}
+static AppTerrain *app = NULL;
 
 AppTerrain::~AppTerrain()
 {
@@ -45,11 +12,30 @@ AppTerrain::~AppTerrain()
 
 void AppTerrain::Init()
 {
+    app = this;
+
     CreateWindow();
     InitCallbacks();
     InitTerrain();
     InitCamera();
     InitGUI();
+}
+
+static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
+    app->KeyboardCB(key, action);
+}
+
+static void CursorPosCallback(GLFWwindow *window, double x, double y)
+{
+    app->PassiveMouseCB((int)x, (int)y);
+}
+
+static void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
+{
+    double x, y;
+    glfwGetCursorPos(window, &x, &y);
+    app->MouseCB(button, action, (int)x, (int)y);
 }
 
 void AppTerrain::Run()
@@ -58,6 +44,7 @@ void AppTerrain::Run()
     {
         glfwPollEvents();
         ProcessHeldKeys();
+        RenderScene();
 
         if (m_showGui)
         {
@@ -66,9 +53,9 @@ void AppTerrain::Run()
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
 
-            ImGui::Begin("Terrain demo - geomipmap grid");
+            ImGui::Begin("Terrain Demo 13"); // Create a window called "Hello, world!" and append into it.
 
-            ImGui::SliderFloat("Max Height", &this->m_maxHeight, 0.0f, 1000.0f);
+            ImGui::SliderFloat("Max height", &this->m_maxHeight, 0.0f, 1000.0f);
             ImGui::SliderFloat("Terrain roughness", &this->m_roughness, 0.0f, 5.0f);
 
             static float Height0 = 64.0f;
@@ -85,7 +72,7 @@ void AppTerrain::Run()
             {
                 m_terrain.Destroy();
                 srandom(getpid());
-                m_terrain.CreateMidpointDisplacement(m_terrainSize, m_patchSize, m_roughness, m_minHeight, m_maxHeight);
+                m_terrain.CreateMidpointDisplacement(m_terrainSize, m_numPatches, m_roughness, m_minHeight, m_maxHeight);
                 m_terrain.SetTextureHeights(Height0, Height1, Height2, Height3);
             }
 
@@ -101,7 +88,7 @@ void AppTerrain::Run()
 
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         }
-        RenderScene();
+
         glfwSwapBuffers(window);
     }
 }
@@ -136,7 +123,7 @@ void AppTerrain::RenderScene()
 
 void AppTerrain::PassiveMouseCB(int x, int y)
 {
-    if (!m_showGui)
+    if (!m_showGui && !m_isPaused)
     {
         m_pGameCamera->OnMouse(x, y);
     }
@@ -231,7 +218,6 @@ void AppTerrain::CreateWindow()
     int minor_ver = 0;
     bool is_full_screen = false;
     window = InitGLFW(major_ver, minor_ver, WINDOW_WIDTH, WINDOW_HEIGHT, is_full_screen, "Terrain rendering test");
-    glfwSetWindowUserPointer(window, this);
     glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
 }
 
@@ -246,9 +232,9 @@ void AppTerrain::InitCamera()
 {
     float CameraX = m_terrain.GetWorldSize() / 2.0f;
     float CameraZ = CameraX;
-    glm::vec3 Pos(CameraX, 0.0f, CameraZ);
+    glm::vec3 Pos(CameraX, -600.0f, CameraZ);
     Pos = m_terrain.ConstrainCameraPosToTerrain(Pos);
-    glm::vec3 Target(0.0f, -0.25f, 1.0f);
+    glm::vec3 Target(0.0f, 0.0f, -1.0f);
     glm::vec3 Up(0.0f, 1.0f, 0.0f);
 
     float FOV = 45.0f;
@@ -262,24 +248,22 @@ void AppTerrain::InitCamera()
         zFar};
 
     m_pGameCamera = new Camera(persProjInfo, Pos, Target, Up);
-    m_pGameCamera->SetSpeed(0.5f);
+    m_pGameCamera->SetSpeed(2.5f);
 }
 
 void AppTerrain::InitTerrain()
 {
-    float WorldScale = 2.0f;
-    float TextureScale = 4.0f;
+    float WorldScale = 64.0f;
+    float TextureScale = 1.0f;
 
     std::vector<std::string> TextureFilenames;
-    TextureFilenames.push_back("assets/terrain_textures/water.png");
+    TextureFilenames.push_back("assets/terrain_textures/tilable-IMG_0044-verydark.png");
     TextureFilenames.push_back("assets/terrain_textures/IMGP5525_seamless.jpg");
     TextureFilenames.push_back("assets/terrain_textures/IMGP5487_seamless.jpg");
-    TextureFilenames.push_back("assets/terrain_textures/tilable-IMG_0044-verydark.png");
+    TextureFilenames.push_back("assets/terrain_textures/water.png");
 
     m_terrain.InitTerrain(WorldScale, TextureScale, TextureFilenames);
-    m_terrain.CreateMidpointDisplacement(m_terrainSize, m_patchSize, m_roughness, m_minHeight, m_maxHeight);
-
-    printf("Patch size: %d", m_patchSize);
+    m_terrain.CreateMidpointDisplacement(m_terrainSize, m_numPatches, m_roughness, m_minHeight, m_maxHeight);
 
     glm::vec3 LightDir(1.0f, -1.0f, 0.0f);
     m_terrain.SetLightDir(LightDir);

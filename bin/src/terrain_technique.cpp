@@ -13,10 +13,20 @@ bool TerrainTechnique::Init()
         return false;
     }
 
-    if (!AddShader(GL_GEOMETRY_SHADER, "bin/shaders/terrain.gs"))
+    if (!AddShader(GL_TESS_CONTROL_SHADER, "bin/shaders/terrain.tcs"))
     {
         return false;
     }
+
+    if (!AddShader(GL_TESS_EVALUATION_SHADER, "bin/shaders/terrain.tes"))
+    {
+        return false;
+    }
+
+    // if (!AddShader(GL_GEOMETRY_SHADER, "bin/shaders/terrain.gs"))
+    // {
+    //     return false;
+    // }
 
     if (!AddShader(GL_FRAGMENT_SHADER, "bin/shaders/terrain.fs"))
     {
@@ -29,21 +39,41 @@ bool TerrainTechnique::Init()
     }
 
     m_VPLoc = GetUniformLocation("gVP");
-    m_texUnitLoc = GetUniformLocation("gTextureHeight0");
+    m_ViewLoc = GetUniformLocation("gView");
+    m_tex0UnitLoc = GetUniformLocation("gTextureHeight0");
+    m_tex1UnitLoc = GetUniformLocation("gTextureHeight1");
+    m_tex2UnitLoc = GetUniformLocation("gTextureHeight2");
+    m_tex3UnitLoc = GetUniformLocation("gTextureHeight3");
+    m_tex0HeightLoc = GetUniformLocation("gHeight0");
+    m_tex1HeightLoc = GetUniformLocation("gHeight1");
+    m_tex2HeightLoc = GetUniformLocation("gHeight2");
+    m_tex3HeightLoc = GetUniformLocation("gHeight3");
     m_reversedLightDirLoc = GetUniformLocation("gReversedLightDir");
-    m_timeLoc = GetUniformLocation("gTime");
+    m_heightMapLoc = GetUniformLocation("gHeightMap");
 
     if (m_VPLoc == INVALID_UNIFORM_LOCATION ||
-        m_texUnitLoc == INVALID_UNIFORM_LOCATION ||
-        m_timeLoc == INVALID_UNIFORM_LOCATION ||
-        m_reversedLightDirLoc == INVALID_UNIFORM_LOCATION)
+        m_ViewLoc == INVALID_UNIFORM_LOCATION ||
+        m_tex0UnitLoc == INVALID_UNIFORM_LOCATION ||
+        m_tex1UnitLoc == INVALID_UNIFORM_LOCATION ||
+        m_tex2UnitLoc == INVALID_UNIFORM_LOCATION ||
+        m_tex3UnitLoc == INVALID_UNIFORM_LOCATION ||
+        m_tex0HeightLoc == INVALID_UNIFORM_LOCATION ||
+        m_tex1HeightLoc == INVALID_UNIFORM_LOCATION ||
+        m_tex2HeightLoc == INVALID_UNIFORM_LOCATION ||
+        m_tex3HeightLoc == INVALID_UNIFORM_LOCATION ||
+        m_reversedLightDirLoc == INVALID_UNIFORM_LOCATION ||
+        m_heightMapLoc == INVALID_UNIFORM_LOCATION)
     {
         return false;
     }
 
     Enable();
 
-    glUniform1i(m_texUnitLoc, COLOR_TEXTURE_UNIT_INDEX_0);
+    glUniform1i(m_tex0UnitLoc, COLOR_TEXTURE_UNIT_INDEX_0);
+    glUniform1i(m_tex1UnitLoc, COLOR_TEXTURE_UNIT_INDEX_1);
+    glUniform1i(m_tex2UnitLoc, COLOR_TEXTURE_UNIT_INDEX_2);
+    glUniform1i(m_tex3UnitLoc, COLOR_TEXTURE_UNIT_INDEX_3);
+    glUniform1i(m_heightMapLoc, HEIGHT_MAP_TEXTURE_UNIT_INDEX);
 
     glUseProgram(0);
 
@@ -61,12 +91,17 @@ void TerrainTechnique::SetMinMaxHeight(float Min, float Max)
     // glUniform1f(m_maxHeightLoc, Max);
 }
 
+void TerrainTechnique::SetViewMatrix(const glm::mat4 &View)
+{
+    glUniformMatrix4fv(m_ViewLoc, 1, GL_FALSE, glm::value_ptr(View));
+}
+
 void TerrainTechnique::SetTextureHeights(float Tex0Height, float Tex1Height, float Tex2Height, float Tex3Height)
 {
-    // glUniform1f(m_tex0HeightLoc, Tex0Height);
-    // glUniform1f(m_tex1HeightLoc, Tex1Height);
-    // glUniform1f(m_tex2HeightLoc, Tex2Height);
-    // glUniform1f(m_tex3HeightLoc, Tex3Height);
+    glUniform1f(m_tex0HeightLoc, Tex0Height);
+    glUniform1f(m_tex1HeightLoc, Tex1Height);
+    glUniform1f(m_tex2HeightLoc, Tex2Height);
+    glUniform1f(m_tex3HeightLoc, Tex3Height);
 }
 
 void TerrainTechnique::SetLightDir(const glm::vec3 &Dir)
@@ -77,6 +112,5 @@ void TerrainTechnique::SetLightDir(const glm::vec3 &Dir)
 
 void TerrainTechnique::SetTime(float Time)
 {
-    glUniform1f(m_timeLoc, Time);
-
+    // glUniform1f(m_timeLoc, Time);
 }

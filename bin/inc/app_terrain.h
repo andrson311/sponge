@@ -46,11 +46,11 @@ private:
     MidpointDispTerrain m_terrain;
     bool m_showGui = false;
     bool m_isPaused = false;
-    int m_terrainSize = 513;
-    float m_roughness = 1.0f;
+    int m_terrainSize = 2048;
+    float m_roughness = 1.2f;
     float m_minHeight = 0.0f;
-    float m_maxHeight = 1.0f;
-    int m_patchSize = 17;
+    float m_maxHeight = 500.0f;
+    int m_numPatches = 32;
     float m_counter = 0.0f;
     bool m_constrainCamera = false;
 };

@@ -51,8 +51,6 @@ public:
 
     void Render(int topology_type)
     {
-        printf("Render(int) called, topology_type = %d\n", topology_type);
-        fflush(stdout);
         glBindVertexArray(m_vao);
 
         if (topology_type == GL_PATCHES)
@@ -67,16 +65,7 @@ public:
 
     void Render()
     {
-        printf("Render() no-arg called, m_topologyType = %d\n", m_topologyType);
-        fflush(stdout);
-
-        printf("about to call Render(int)\n");
-        fflush(stdout);
-
         Render(m_topologyType);
-
-        printf("returned from Render(int)\n");
-        fflush(stdout);
     }
 
 private:

@@ -6,14 +6,15 @@
 #include "camera.h"
 #include "array_2d.h"
 #include "texture.h"
-#include "geomip_grid.h"
+
+#include "quad_list.h"
 #include "terrain_technique.h"
 #include "skydome.h"
 
 class BaseTerrain
 {
 public:
-    BaseTerrain() {}
+    BaseTerrain() : m_heightMapTexture(GL_TEXTURE_2D) {}
     ~BaseTerrain();
 
     void Destroy();
@@ -30,7 +31,7 @@ public:
     void SetTextureHeights(float Tex0Height, float Tex1Height, float Tex2Height, float Tex3Height);
     void SetLightDir(const glm::vec3 &Dir) { m_lightDir = Dir; }
     float GetMaxHeight() const { return m_maxHeight; }
-    float GetWorldSize() const { return m_terrainSize * m_worldScale; }
+    float GetWorldSize() const { return m_numPatches * m_worldScale; }
     glm::vec3 ConstrainCameraPosToTerrain(const glm::vec3 &CameraPos);
 
 protected:
@@ -40,18 +41,19 @@ protected:
     float GetWorldHeight(float x, float z) const;
 
     int m_terrainSize = 0;
-    int m_patchSize = 0;
+    int m_numPatches = 0;
     float m_worldScale = 1.0f;
     Array2D<float> m_heightMap;
-    Texture *m_pTextures[4] = {0};
-    float m_textureScale = 1.0f;
 
 private:
-    GeomipGrid m_geomipGrid;
+    float m_textureScale = 1.0f;
+    Texture *m_pTextures[4] = {0};
+    Texture m_heightMapTexture;
+    QuadList m_quadList;
     float m_minHeight = 0.0f;
     float m_maxHeight = 0.0f;
     TerrainTechnique m_terrainTech;
     glm::vec3 m_lightDir;
     float m_cameraHeight = 2.0f;
-    Skydome* m_pSkydome = NULL;
+    Skydome *m_pSkydome = NULL;
 };

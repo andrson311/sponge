@@ -266,8 +266,10 @@ void App::MouseCB(int button, int action, int x, int y)
 
 void App::CreateWindow()
 {
+    int major_ver = 0;
+    int minor_ver = 0;
     bool is_full_screen = false;
-    window = InitGLFW(WINDOW_WIDTH, WINDOW_HEIGHT, is_full_screen, "Test window");
+    window = InitGLFW(major_ver, minor_ver, WINDOW_WIDTH, WINDOW_HEIGHT, is_full_screen, "Test window");
     glfwSetWindowUserPointer(window, this);
     glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
 }

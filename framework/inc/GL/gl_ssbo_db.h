@@ -1,0 +1,5 @@
+#pragma once
+
+#define SSBO_INDEX_VERTICES 0
+#define SSBO_INDEX_PER_OBJ_DATA 1
+#define SSBO_INDEX_MATERIALS 2

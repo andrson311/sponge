@@ -4,10 +4,13 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/3rdparty/ImGUI"
+                "${workspaceFolder}/3rdparty",
+                "${workspaceFolder}/3rdparty/ImGUI",
+                "${workspaceFolder}/3rdparty/ImGUI/imguizmo_quat"
             ],
             "defines": [
-                "IMGUI_IMPL_OPENGL_LOADER_GLEW"
+                "IMGUI_IMPL_OPENGL_LOADER_GLEW",
+                "IMGUIZMO_IMGUI_FOLDER=ImGUI/"
             ],
             "compilerPath": "/usr/bin/g++",
             "cStandard": "c17",

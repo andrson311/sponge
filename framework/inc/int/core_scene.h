@@ -1,0 +1,104 @@
+#pragma once
+
+#include <list>
+#include "common_includes.h"
+#include "core_model.h"
+
+class CoreSceneObject : public SceneObject
+{
+public:
+    CoreSceneObject() {}
+
+    void SetModel(CoreModel *pModel)
+    {
+        if (m_pModel)
+        {
+            printf("%s:%d - model already initialized\n", __FILE__, __LINE__);
+            exit(0);
+        }
+
+        m_pModel = pModel;
+    }
+
+    void InitMeshTransforms()
+    {
+        assert(m_pModel);
+        size_t NumMeshes = m_pModel->GetNumMeshes();
+        m_meshTransforms.resize(NumMeshes);
+    }
+
+    CoreModel *GetModel() const { return m_pModel; }
+
+    void SetID(int id) { m_id = id; }
+    int GetID() const { return m_id; }
+
+private:
+    CoreModel *m_pModel = NULL;
+    std::vector<glm::mat4> m_meshTransforms;
+    int m_id = -1;
+};
+
+class CoreRenderingSystem;
+
+class CoreScene : public Scene, public Object
+{
+public:
+    CoreScene(CoreRenderingSystem *pRenderingSystem);
+    virtual ~CoreScene() {}
+
+    virtual void LoadScene(const std::string &filename, const ModelLoadFlags &flags);
+    virtual SceneObject *CreateSceneObject(Model *pModel);
+    virtual SceneObject *CreateSceneObject(const std::string &basicShape);
+    virtual std::list<SceneObject *> GetSceneObjectsList();
+    virtual void StartSceneGUI(const char *pTitle);
+    virtual void EndSceneGUI();
+    virtual const InputState &GetInputState() { return m_inputState; }
+    InputState &GetInputStateInternal() { return m_inputState; }
+
+    const std::vector<PointLight> &GetPointLights();
+    const std::vector<SpotLight> &GetSpotLights();
+    const std::vector<DirectionalLight> &GetDirLights();
+
+    CameraFPS *GetCurrentCamera() { return &m_defaultCamera; }
+    void InitializeDefault();
+
+    const std::list<CoreSceneObject *> &GetRenderList() { return m_renderList; }
+    void AddToRenderList(SceneObject *pSceneObject);
+    bool RemoveFromRenderList(SceneObject *pSceneObject);
+
+    bool IsClearFrame() const { return m_clearFrame; }
+    const glm::vec4 &GetClearColor() { return m_clearColor; }
+
+    void SetCamera(const glm::vec3 &pos, const glm::vec3 &target);
+    void SetCameraZRange(float near, float far);
+    void SetCameraAcceleration(float acceleration);
+    // void SetCameraSpeed(float speed);
+
+    void SetPickedSceneObject(CoreSceneObject *pSceneObject) { m_pPickedSceneObject = pSceneObject; }
+    SceneObject *GetPickedSceneObject() const { return m_pPickedSceneObject; }
+
+    SceneConfig *GetConfig() { return &m_config; }
+
+protected:
+    virtual int GetSkyboxMipmapLevels() const { return 1; }
+
+    CoreRenderingSystem *m_pCoreRenderingSystem = NULL;
+    std::list<CoreSceneObject *> m_renderList;
+    InputState m_inputState;
+
+private:
+    void CreateDefaultCamera();
+    CoreSceneObject *CreateSceneObjectInternal(CoreModel *pModel);
+    void LightingGUI();
+    void GeneralGUI();
+    void SceneObjectGUI();
+    void SSAOGUI();
+    void HDRAndToneMappingGUI();
+    void TerrainGUI();
+
+    CameraFPS m_defaultCamera;
+    std::vector<CoreSceneObject> m_sceneObjects;
+    int m_numSceneObjects = 0;
+    CoreSceneObject *m_pPickedSceneObject = NULL;
+    SceneConfig m_config;
+};

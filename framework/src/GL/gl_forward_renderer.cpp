@@ -96,8 +96,8 @@ void ForwardRenderer::InitForwardRenderer(RenderingSystemGL *pRenderingSystemGL)
                                  NULL, GL_MAP_READ_BIT | GL_CLIENT_STORAGE_BIT);
     m_ssaoParams.InitBuffer(sizeof(SSAOParamsInternal), NULL, GL_DYNAMIC_STORAGE_BIT);
     m_lightSources.resize(MAX_NUM_LIGHTS);
-    m_lightParams.InitBuffer(std::size(m_lightSources), NULL, GL_DYNAMIC_STORAGE_BIT);
-    m_ssaoRotTexture.Load("res/textures/rot_texture.bmp");
+    m_lightParams.InitBuffer(m_lightSources.size() * sizeof(LightSource), NULL, GL_DYNAMIC_STORAGE_BIT);
+    m_ssaoRotTexture.Load(std::string("res/textures/rot_texture.bmp"));
 
     glUseProgram(0);
 }
@@ -603,7 +603,7 @@ void ForwardRenderer::UpdateLightSources(GLScene *pScene)
     SetupLightSourcesArray(pScene);
 
     // TODO: can update only the correct number of lights
-    m_lightParams.Update(m_lightSources.data(), std::size(m_lightSources));
+    m_lightParams.Update(m_lightSources.data(), m_lightSources.size() * sizeof(LightSource));
 }
 
 void ForwardRenderer::SetupLightSourcesArray(GLScene *pScene)

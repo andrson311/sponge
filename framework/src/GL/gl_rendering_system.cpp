@@ -258,6 +258,7 @@ void RenderingSystemGL::Execute()
         double totalRuntime = curTime - startTime;
 
         m_elapsedTime = curTime - startTime;
+        m_pCamera->Update((float)deltaTime);
         if (m_pScene)
         {
             m_forwardRenderer.Render(m_pWindow, (GLScene *)m_pScene, m_pGameCallbacks, totalRuntime, deltaTime);
@@ -342,6 +343,11 @@ void RenderingSystemGL::OnCursorPosCallback(GLFWwindow *pWindow, double x, doubl
 
 static bool IsMouseControlByImGUI()
 {
+    if (!ImGui::GetCurrentContext())
+    {
+        return false;
+    }
+
     ImGuiIO &io = ImGui::GetIO();
     return io.WantCaptureMouse;
 }

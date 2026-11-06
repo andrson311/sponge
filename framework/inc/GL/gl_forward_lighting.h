@@ -121,8 +121,8 @@ private:
 
     struct
     {
-        Uniform<glm::vec3> Ambient;
-        Uniform<glm::vec3> Diffuse;
-        Uniform<glm::vec3> Specular;
+        Uniform<glm::vec4> Ambient;
+        Uniform<glm::vec4> Diffuse;
+        Uniform<glm::vec4> Specular;
     } m_material;
 };
